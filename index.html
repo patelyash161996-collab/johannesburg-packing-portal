@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://script.google.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'" />
 <link rel="icon" href="data:," />
 <title>Johannesburg Export Packing Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -37,6 +39,7 @@
     }
   }
   *{box-sizing:border-box}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
   html{-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:"Barlow",system-ui,sans-serif;font-size:15px;line-height:1.45}
   h1,h2,h3{font-family:"Archivo","Barlow",sans-serif;margin:0}
@@ -657,12 +660,18 @@
           <ol class="steps">
             <li>Open your packing Google Sheet → <b>Extensions → Apps Script</b>.</li>
             <li>Delete any code there, click <b>Copy Code.gs</b> above, and paste it in.</li>
-            <li><b>Deploy → Web app</b>, set “Who has access” to <b>Anyone</b>, and copy the Web App URL.</li>
-            <li>Paste that URL below and press <b>Save URL</b>. Entries then sync both ways.</li>
+            <li>Add a Script Property named <code class="inline">PORTAL_SYNC_TOKEN</code> with a random token of at least 16 characters.</li>
+            <li><b>Deploy → Web app</b>, set “Who has access” to <b>Anyone</b>, and copy the Web App URL. Anyone access plus the token keeps writes restricted.</li>
+            <li>Paste the URL and the same token below, then press <b>Save URL</b>. Entries sync both ways.</li>
           </ol>
           <div>
             <label for="gasUrl">Google Apps Script Web App URL</label>
-            <input id="gasUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycbzCHyfjSxBuT8kihu8nBJxjiHTGrScZXY8SyaC8Bgn7sEAXwoQrg5FsIj411-kaHTbYOw/exec" class="mono" style="width:100%" />
+            <input id="gasUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" class="mono" style="width:100%" autocomplete="off" />
+          </div>
+          <div>
+            <label for="syncToken">Portal sync token</label>
+            <input id="syncToken" type="password" placeholder="Set the same token in the Apps Script properties" class="mono" style="width:100%" autocomplete="off" />
+            <span style="font-size:11.5px;color:var(--ink-3)">Stored only for this browser tab session. Configure <code class="inline">PORTAL_SYNC_TOKEN</code> in Apps Script.</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
             <button class="btn btn-dark btn-sm" onclick="saveGasUrl()">Save URL</button>
@@ -797,7 +806,9 @@ var boxes = [];
 var masterCodes = DEFAULT_MASTER.slice();
 var categories = DEFAULT_CATEGORIES.slice();
 var historyLog = [];
-var gasUrl = "https://script.google.com/macros/s/AKfycbzCHyfjSxBuT8kihu8nBJxjiHTGrScZXY8SyaC8Bgn7sEAXwoQrg5FsIj411-kaHTbYOw/exec";
+var gasUrl = "";
+var syncToken = "";
+var STORAGE_KEY = "johannesburg-packing-portal-v1";
 var viewMode = "grouped";
 var reportPeriod = "daily";
 var expanded = {};
@@ -806,6 +817,38 @@ var pollTimer = null;
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function cleanText(v, max){ var s = String(v == null ? "" : v).replace(/[\u0000-\u001F\u007F]/g," ").trim(); return s.slice(0, max || 500); }
+function safeNumber(v, max){
+  var n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.min(n, max || 1000000000);
+}
+function saveLocalState(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      boxes: boxes,
+      masterCodes: masterCodes,
+      categories: categories,
+      historyLog: historyLog,
+      gasUrl: gasUrl
+    }));
+  } catch(e) { /* Storage may be disabled; the sheet remains the shared source of truth. */ }
+}
+function loadLocalState(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    var data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.boxes)) return false;
+    boxes = data.boxes;
+    if (Array.isArray(data.masterCodes) && data.masterCodes.length) masterCodes = data.masterCodes;
+    if (Array.isArray(data.categories) && data.categories.length) categories = data.categories;
+    if (Array.isArray(data.historyLog)) historyLog = data.historyLog.slice(0,30);
+    if (typeof data.gasUrl === "string") gasUrl = data.gasUrl;
+    syncToken = sessionStorage.getItem(STORAGE_KEY + "-token") || "";
+    return true;
+  } catch(e) { return false; }
+}
 function num(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function fmt(n){ return Number(n || 0).toLocaleString("en-IN"); }
 function fmt2(n){ return Number(n || 0).toLocaleString("en-IN",{minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -908,6 +951,7 @@ function filterByContainer(name){
 /* ================= rendering ================= */
 function renderAll(){
   renderKpis(); renderGrouped(); renderFlat(); renderLastEntry();
+  saveLocalState();
 }
 function renderKpis(){
   var stones = 0, lines = 0, weight = 0, disp = 0, locked = 0;
@@ -1036,7 +1080,7 @@ function addStoneRow(p){
   var tb = $("stoneLinesBody");
   var tr = document.createElement("tr");
   tr.className = "stone-row";
-  var mcOpts = '<option value="">— Select master code —</option>' + masterCodes.map(function(m){ return '<option value="' + esc(m.code) + '">' + esc(m.code) + ' (' + esc(m.colour || m.category) + ')</option>'; }).join("");
+  var mcOpts = '<option value="">— Select master code —</option>' + masterCodes.map(function(m){ return '<option value="' + esc(m.code) + '"' + (p.code && m.code.toUpperCase() === p.code.toUpperCase() ? " selected" : "") + '>' + esc(m.code) + ' (' + esc(m.colour || m.category) + ')</option>'; }).join("");
   var catOpts = '<option value="">Select category</option>' + categories.map(function(c){ return '<option value="' + esc(c) + '"' + ((p.category || "").toUpperCase() === c.toUpperCase() ? " selected" : "") + '>' + esc(c) + '</option>'; }).join("");
   tr.innerHTML =
     '<td data-label="Master code"><select class="mc-pick" onchange="applyMaster(this)" aria-label="Master code">' + mcOpts + '</select></td>'
@@ -1046,8 +1090,23 @@ function addStoneRow(p){
     + '<td data-label="Type of stone"><input class="r-type" type="text" value="' + esc(p.typeOfStone || "") + '" placeholder="Type" aria-label="Type of stone" /></td>'
     + '<td data-label="Size (mm)"><input class="r-size" type="text" value="' + esc(p.sizeMm || "") + '" placeholder="Size mm" aria-label="Size in mm" /></td>'
     + '<td data-label="No of stone"><input class="r-qty" type="number" min="1" required value="' + esc(p.noOfStone || "") + '" placeholder="Qty" style="font-weight:700" aria-label="Number of stones" /></td>'
-    + '<td data-label=""><button type="button" class="icon-btn" title="Remove line" aria-label="Remove stone line" onclick="removeStoneRow(this)">✕</button></td>';
+    + '<td data-label=""><div style="display:flex;gap:4px"><button type="button" class="icon-btn" title="Repeat stone details" aria-label="Repeat stone details; change quantity" onclick="repeatStoneRow(this)">⧉</button><button type="button" class="icon-btn" title="Remove line" aria-label="Remove stone line" onclick="removeStoneRow(this)">✕</button></div></td>';
   tb.appendChild(tr);
+}
+function repeatStoneRow(btn){
+  var tr = btn.closest("tr");
+  var copy = {
+    category: tr.querySelector(".r-cat").value,
+    code: tr.querySelector(".r-code").value,
+    colour: tr.querySelector(".r-colour").value,
+    typeOfStone: tr.querySelector(".r-type").value,
+    sizeMm: tr.querySelector(".r-size").value,
+    noOfStone: tr.querySelector(".r-qty").value
+  };
+  addStoneRow(copy);
+  var qty = $("stoneLinesBody").lastElementChild.querySelector(".r-qty");
+  qty.focus();
+  qty.select();
 }
 function removeStoneRow(btn){
   var tb = $("stoneLinesBody");
@@ -1096,7 +1155,16 @@ function editBox(no){
 }
 function handleSaveBox(e){
   e.preventDefault();
-  var boxNo = $("fBoxNo").value.trim();
+  var boxNo = cleanText($("fBoxNo").value, 30);
+  var boxCodeVal = cleanText($("fBoxCode").value || ("SWA/JOB/" + boxNo), 80).toUpperCase();
+  var packer = cleanText($("fPackingBy").value, 80);
+  if (!boxNo || !/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,29}$/.test(boxNo)){
+    toast("Use a box number with only letters, numbers, dots, hyphen or slash (30 characters max).", "error"); return;
+  }
+  if (!boxCodeVal || boxCodeVal.length > 80){
+    toast("Enter a valid box code (80 characters max).", "error"); return;
+  }
+  if (!packer){ toast("Enter the operator name.", "warning"); return; }
   var editing = $("editingBoxNo").value.trim();
   if (!editing && boxes.some(function(b){ return String(b.boxNo).toLowerCase() === boxNo.toLowerCase(); })){
     toast("Box #" + boxNo + " already exists. Edit that box or use a new box number.", "error"); return;
@@ -1104,25 +1172,23 @@ function handleSaveBox(e){
   var items = [];
   var rows = document.querySelectorAll("#stoneLinesBody .stone-row");
   rows.forEach(function(tr){
-    var code = tr.querySelector(".r-code").value.trim().toUpperCase();
-    var qty = num(tr.querySelector(".r-qty").value);
+    var code = cleanText(tr.querySelector(".r-code").value, 80).toUpperCase();
+    var qty = safeNumber(tr.querySelector(".r-qty").value, 1000000);
     if (code || qty > 0) items.push({
-      category: tr.querySelector(".r-cat").value.trim(),
+      category: cleanText(tr.querySelector(".r-cat").value, 50),
       code: code,
-      colour: tr.querySelector(".r-colour").value.trim(),
-      typeOfStone: tr.querySelector(".r-type").value.trim(),
-      sizeMm: tr.querySelector(".r-size").value.trim(),
+      colour: cleanText(tr.querySelector(".r-colour").value, 80),
+      typeOfStone: cleanText(tr.querySelector(".r-type").value, 80),
+      sizeMm: cleanText(tr.querySelector(".r-size").value, 50),
       noOfStone: qty
     });
   });
   if (!items.length){ toast("Enter at least one stone code and quantity.", "warning"); return; }
   var existing = null;
   boxes.forEach(function(b){ if (String(b.boxNo) === editing) existing = b; });
-  var packer = $("fPackingBy").value.trim();
-  var boxCodeVal = ($("fBoxCode") && $("fBoxCode").value.trim()) ? $("fBoxCode").value.trim().toUpperCase() : ("SWA/JOB/" + boxNo);
   var obj = {
     date: $("fDate").value, boxNo: boxNo, boxCode: boxCodeVal,
-    boxWeight: num($("fWeight").value), boxSize: $("fBoxSize").value.trim(),
+    boxWeight: safeNumber($("fWeight").value, 10000000), boxSize: cleanText($("fBoxSize").value, 50),
     packingBy: packer,
     containerNo: $("fContainer").value.trim().toUpperCase(),
     lotNo: $("fLot").value.trim(), shipmentDate: $("fShipDate").value,
@@ -1151,7 +1217,7 @@ function confirmDelete(no){
     logHistory({type:"Box deleted", enteredBy: (b && b.packingBy) || "Operator", source:"Box #" + no, boxesCount:1, stonesCount: b ? boxStones(b) : 0});
     renderAll(); toast("Box #" + no + " deleted.", "");
     if (gasUrl){
-      fetch(gasUrl, {method:"POST", body: JSON.stringify({action:"deleteBox", boxNo: no})}).catch(function(){});
+      fetch(gasUrl, {method:"POST", body: JSON.stringify({action:"deleteBox", token: syncToken, boxNo: no}), credentials:"omit"}).catch(function(){});
     }
   });
 }
@@ -1271,7 +1337,7 @@ function populateCategories(){
 function addCategory(){
   var v = ($("newCategory").value || "").trim().toUpperCase();
   if (!v) return;
-  if (categories.indexOf(v) === -1){ categories.push(v); populateCategories(); toast('Category "' + v + '" added.', "success"); }
+  if (categories.indexOf(v) === -1){ categories.push(v); populateCategories(); saveLocalState(); toast('Category "' + v + '" added.', "success"); }
   $("newCategory").value = "";
 }
 function handleAddMaster(e){
@@ -1281,12 +1347,12 @@ function handleAddMaster(e){
   var found = false;
   masterCodes = masterCodes.map(function(m){ if (m.code === item.code){ found = true; return item; } return m; });
   if (!found) masterCodes.unshift(item);
-  renderMaster(); e.target.reset();
+  renderMaster(); saveLocalState(); e.target.reset();
   toast("Master code " + item.code + " saved.", "success");
 }
 function deleteMaster(code){
   masterCodes = masterCodes.filter(function(m){ return m.code !== code; });
-  renderMaster();
+  renderMaster(); saveLocalState();
 }
 function renderMaster(){
   var tb = $("masterBody");
@@ -1406,7 +1472,7 @@ function renderHistory(){
       + '<td data-label="Boxes" class="r" style="font-weight:700">' + x.boxesCount + '</td><td data-label="Stones" class="r">' + fmt(x.stonesCount) + '</td></tr>';
   }).join("");
 }
-function clearHistory(){ historyLog = []; renderHistory(); renderLastEntry(); }
+function clearHistory(){ historyLog = []; renderHistory(); renderLastEntry(); saveLocalState(); }
 
 /* ================= export / backup ================= */
 function download(content, filename, mime){
@@ -1457,6 +1523,23 @@ function setSyncUI(on, timeStr){
 }
 function saveGasUrl(){
   gasUrl = ($("gasUrl").value || "").trim();
+  syncToken = ($("syncToken").value || "").trim();
+  if (gasUrl && !/^https:\/\/script\.google\.com\/macros\/s\/[^\/]+\/exec$/.test(gasUrl)){
+    toast("Use a valid HTTPS Google Apps Script /exec Web App URL.", "error");
+    gasUrl = "";
+    setSyncUI(false);
+    return;
+  }
+  if (gasUrl && syncToken.length < 16){
+    toast("Set a sync token of at least 16 characters.", "warning");
+    setSyncUI(false);
+    return;
+  }
+  try {
+    if (syncToken) sessionStorage.setItem(STORAGE_KEY + "-token", syncToken);
+    else sessionStorage.removeItem(STORAGE_KEY + "-token");
+  } catch(e) {}
+  saveLocalState();
   setSyncUI(!!gasUrl);
   toast(gasUrl ? "Sheet URL saved. Pulling live data…" : "Sheet URL cleared.", "");
   if (gasUrl) pullFromSheet(false);
@@ -1469,7 +1552,7 @@ function pullFromSheet(silent){
   if (!gasUrl){ if (!silent) toast("Paste and save your Apps Script Web App URL first.", "warning"); return; }
   if (!silent) toast("Syncing with Google Sheet…", "");
   var sep = gasUrl.indexOf("?") > -1 ? "&" : "?";
-  fetch(gasUrl + sep + "action=getAll&_t=" + Date.now(), {method:"GET", redirect:"follow"})
+  fetch(gasUrl + sep + "action=getAll&token=" + encodeURIComponent(syncToken) + "&_t=" + Date.now(), {method:"GET", redirect:"follow", credentials:"omit"})
     .then(function(r){ return r.text(); })
     .then(function(txt){
       var data;
@@ -1495,12 +1578,12 @@ function pullFromSheet(silent){
 }
 function pushBox(b){
   if (!gasUrl) return;
-  fetch(gasUrl, {method:"POST", body: JSON.stringify({action:"upsertBox", box: b})}).catch(function(){});
+  fetch(gasUrl, {method:"POST", body: JSON.stringify({action:"upsertBox", token: syncToken, box: b}), credentials:"omit"}).catch(function(){});
 }
 function pushAllToSheet(silent){
   if (!gasUrl){ if (!silent) toast("Link your Apps Script URL first to save to the Google Sheet.", "warning"); return; }
   if (!silent) toast("Saving all boxes to Google Sheet…", "");
-  fetch(gasUrl, {method:"POST", body: JSON.stringify({action:"replaceAllBoxes", boxes: boxes})})
+  fetch(gasUrl, {method:"POST", body: JSON.stringify({action:"replaceAllBoxes", token: syncToken, boxes: boxes}), credentials:"omit"})
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (data.status !== "ok") throw new Error(data.message || "Push failed.");
@@ -1515,6 +1598,11 @@ function pushAllToSheet(silent){
 function importFile(ev){
   var file = ev.target.files[0];
   if (!file) return;
+  if (file.size > 10 * 1024 * 1024){
+    toast("File is too large. Choose an Excel or CSV file under 10 MB.", "error");
+    ev.target.value = "";
+    return;
+  }
   var reader = new FileReader();
   reader.onload = function(e){
     try {
@@ -1751,6 +1839,11 @@ $("confirmGo").addEventListener("click", function(){
 document.querySelectorAll(".modal-back").forEach(function(m){
   m.addEventListener("click", function(e){ if (e.target === m) m.classList.add("hidden"); });
 });
+document.addEventListener("keydown", function(e){
+  if (e.key === "Escape"){
+    document.querySelectorAll(".modal-back").forEach(function(m){ m.classList.add("hidden"); });
+  }
+});
 
 /* ================= Apps Script template ================= */
 var CODE_GS = [
@@ -1758,6 +1851,7 @@ var CODE_GS = [
 "const SHEET_MASTER = 'MASTER CODES';",
 "",
 "function doGet(e) {",
+"  if (!authorized_(e && e.parameter ? e.parameter.token : null)) return jsonError_('Unauthorized');",
 "  const ss = SpreadsheetApp.getActiveSpreadsheet();",
 "  const packSheet = getOrCreateSheet_(ss, SHEET_PACKING, ['Date','Box No','Category','Stone Code','Colour','Type of Stone','Size (mm)','No of Stone','Box Weight (Kg)','Box Size (in)','Packing Done By','Container No','Lot No','Shipment Date','Shipment Mode','BL / AWB No','Location','Lock Status','Box Code']);",
 "  const masterSheet = getOrCreateSheet_(ss, SHEET_MASTER, ['Category','Stone Code','Colour','Type of Stone','Size (mm)']);",
@@ -1774,19 +1868,69 @@ var CODE_GS = [
 "}",
 "",
 "function doPost(e) {",
-"  const payload = JSON.parse(e.postData.contents);",
-"  const ss = SpreadsheetApp.getActiveSpreadsheet();",
-"  const packSheet = getOrCreateSheet_(ss, SHEET_PACKING, ['Date','Box No','Category','Stone Code','Colour','Type of Stone','Size (mm)','No of Stone','Box Weight (Kg)','Box Size (in)','Packing Done By','Container No','Lot No','Shipment Date','Shipment Mode','BL / AWB No','Location','Lock Status','Box Code']);",
-"  if (payload.action === 'upsertBox' && payload.box) { deleteBoxRows_(packSheet, payload.box.boxNo); appendBoxRows_(packSheet, payload.box); }",
-"  else if (payload.action === 'deleteBox' && payload.boxNo) { deleteBoxRows_(packSheet, payload.boxNo); }",
-"  else if (payload.action === 'replaceAllBoxes' && Array.isArray(payload.boxes)) { if (packSheet.getLastRow() > 1) packSheet.getRange(2, 1, packSheet.getLastRow() - 1, 19).clearContent(); payload.boxes.forEach(b => appendBoxRows_(packSheet, b)); }",
-"  return ContentService.createTextOutput(JSON.stringify({ status: 'ok' })).setMimeType(ContentService.MimeType.JSON);",
+"  let payload;",
+"  try { payload = JSON.parse(e.postData.contents); } catch (err) { return jsonError_('Invalid JSON'); }",
+"  if (!payload || !authorized_(payload.token)) return jsonError_('Unauthorized');",
+"  if (!payload.action || typeof payload.action !== 'string' || payload.action.length > 40) return jsonError_('Invalid action');",
+"  const lock = LockService.getScriptLock();",
+"  try {",
+"    lock.waitLock(10000);",
+"    const ss = SpreadsheetApp.getActiveSpreadsheet();",
+"    const packSheet = getOrCreateSheet_(ss, SHEET_PACKING, ['Date','Box No','Category','Stone Code','Colour','Type of Stone','Size (mm)','No of Stone','Box Weight (Kg)','Box Size (in)','Packing Done By','Container No','Lot No','Shipment Date','Shipment Mode','BL / AWB No','Location','Lock Status','Box Code']);",
+"    if (payload.action === 'upsertBox' && payload.box) {",
+"      const box = sanitizeBox_(payload.box);",
+"      if (!box.boxNo) return jsonError_('Invalid box');",
+"      deleteBoxRows_(packSheet, box.boxNo); appendBoxRows_(packSheet, box);",
+"    } else if (payload.action === 'deleteBox' && payload.boxNo) {",
+"      deleteBoxRows_(packSheet, clean_(payload.boxNo, 30));",
+"    } else if (payload.action === 'replaceAllBoxes' && Array.isArray(payload.boxes)) {",
+"      if (payload.boxes.length > 5000) return jsonError_('Too many boxes');",
+"      if (packSheet.getLastRow() > 1) packSheet.getRange(2, 1, packSheet.getLastRow() - 1, 19).clearContent();",
+"      payload.boxes.map(sanitizeBox_).filter(b => b.boxNo).forEach(b => appendBoxRows_(packSheet, b));",
+"    } else {",
+"      return jsonError_('Unknown action');",
+"    }",
+"    return ContentService.createTextOutput(JSON.stringify({ status: 'ok' })).setMimeType(ContentService.MimeType.JSON);",
+"  } catch (err) {",
+"    return jsonError_('Write failed');",
+"  } finally {",
+"    try { lock.releaseLock(); } catch (err) {}",
+"  }",
 "}",
 "",
 "function appendBoxRows_(sheet, box) { const items = (box.items && box.items.length) ? box.items : [{}]; items.forEach(it => { sheet.appendRow([box.date || '', box.boxNo || '', it.category || '', it.code || '', it.colour || '', it.typeOfStone || '', it.sizeMm || '', Number(it.noOfStone) || 0, Number(box.boxWeight) || 0, box.boxSize || '', box.packingBy || '', box.containerNo || '', box.lotNo || '', box.shipmentDate || '', box.shipmentMode || '', box.blAwbNo || '', box.location || '', box.locked ? 'LOCKED' : 'OPEN', box.boxCode || ('SWA/JOB/' + (box.boxNo || ''))]); }); }",
 "function deleteBoxRows_(sheet, boxNo) { const data = sheet.getDataRange().getValues(); for (let i = data.length - 1; i >= 1; i--) { if (String(data[i][1]).trim() === String(boxNo).trim()) sheet.deleteRow(i + 1); } }",
 "function getOrCreateSheet_(ss, name, headers) { let sh = ss.getSheetByName(name); if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); } return sh; }",
-"function fmt_(val) { if (!val) return ''; if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd'); return String(val); }"
+"function fmt_(val) { if (!val) return ''; if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd'); return String(val); }",
+"function authorized_(token) {",
+"  const configured = PropertiesService.getScriptProperties().getProperty('PORTAL_SYNC_TOKEN');",
+"  return !!configured && typeof token === 'string' && token.length >= 16 && token === configured;",
+"}",
+"function jsonError_(message) {",
+"  return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: message })).setMimeType(ContentService.MimeType.JSON);",
+"}",
+"function clean_(value, max) {",
+"  return String(value == null ? '' : value).replace(/[\\u0000-\\u001F\\u007F]/g,' ').trim().slice(0, max || 500);",
+"}",
+"function sanitizeBox_(b) {",
+"  if (!b || typeof b !== 'object') return {};",
+"  const boxNo = clean_(b.boxNo, 30);",
+"  if (!boxNo || !/^[-A-Za-z0-9._/]+$/.test(boxNo)) return {};",
+"  const items = Array.isArray(b.items) ? b.items.slice(0, 200).map(it => ({",
+"    category: clean_(it.category, 50), code: clean_(it.code, 80).toUpperCase(),",
+"    colour: clean_(it.colour, 80), typeOfStone: clean_(it.typeOfStone, 80),",
+"    sizeMm: clean_(it.sizeMm, 50), noOfStone: Math.max(0, Math.min(Number(it.noOfStone) || 0, 1000000))",
+"  })) : [];",
+"  return {",
+"    date: clean_(b.date, 20), boxNo: boxNo, boxCode: clean_(b.boxCode || ('SWA/JOB/' + boxNo), 80).toUpperCase(),",
+"    boxWeight: Math.max(0, Math.min(Number(b.boxWeight) || 0, 10000000)),",
+"    boxSize: clean_(b.boxSize, 50), packingBy: clean_(b.packingBy, 80),",
+"    containerNo: clean_(b.containerNo, 80).toUpperCase(), lotNo: clean_(b.lotNo, 80),",
+"    shipmentDate: clean_(b.shipmentDate, 20), shipmentMode: clean_(b.shipmentMode, 30).toUpperCase(),",
+"    blAwbNo: clean_(b.blAwbNo, 80), location: clean_(b.location || 'JOHANNESBURG', 80),",
+"    locked: b.locked === true, items: items",
+"  };",
+"}"
 ].join("\n");
 function copyCodeGs(){
   if (navigator.clipboard && navigator.clipboard.writeText){
@@ -1813,8 +1957,11 @@ function seedPendingBoxes(){
 
 /* ================= init ================= */
 (function init(){
-  boxes = seedPendingBoxes();
-  logHistory({type:"Packing sheet loaded", enteredBy:"Johannesburg sheet", source:"29 pending boxes — 5078 & 5080–5107 → Containers 9–10", boxesCount:29, stonesCount:0});
+  var restored = loadLocalState();
+  if (!restored){
+    boxes = seedPendingBoxes();
+    logHistory({type:"Packing sheet loaded", enteredBy:"Johannesburg sheet", source:"29 pending boxes — 5078 & 5080–5107 → Containers 9–10", boxesCount:29, stonesCount:0});
+  }
   populateCategories();
   renderMaster();
   renderAll();
@@ -1826,9 +1973,10 @@ function seedPendingBoxes(){
   addStoneRow();
   if (gasUrl){
     if ($("gasUrl")) $("gasUrl").value = gasUrl;
-    setSyncUI(true);
-    pullFromSheet(true);
-    pollTimer = setInterval(function(){ if (!document.hidden && gasUrl) pullFromSheet(true); }, 30000);
+    if ($("syncToken")) $("syncToken").value = syncToken;
+    setSyncUI(!!syncToken);
+    if (syncToken) pullFromSheet(true);
+    pollTimer = setInterval(function(){ if (!document.hidden && gasUrl && syncToken) pullFromSheet(true); }, 30000);
   }
 })();
 </script>
