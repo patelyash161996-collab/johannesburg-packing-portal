@@ -399,7 +399,7 @@
           <div class="toolbar-left">
             <div class="search">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input id="searchInput" type="text" placeholder="Search box code (SWA/JOB…), box no, stone code, colour, container, packer…" oninput="renderAll()" aria-label="Search packing list" />
+              <input id="searchInput" type="text" placeholder="Search box code, box no, master code, category, container, packer…" oninput="renderAll()" aria-label="Search packing list" />
             </div>
             <select id="filterCategory" onchange="renderAll()" aria-label="Filter by category"><option value="">All categories</option></select>
             <select id="filterDispatch" onchange="renderAll()" aria-label="Filter by status">
@@ -446,7 +446,7 @@
         <div class="tbl-wrap">
           <table class="tbl tbl-stack" id="flatTable">
             <thead><tr>
-              <th>Date</th><th>Box No</th><th>Box Code</th><th>Lock</th><th>Category</th><th>Stone Code</th><th>Colour</th><th>Type of Stone</th><th>Size (mm)</th><th class="r">No of Stone</th><th class="r">Box Wt (kg)</th><th>Box Size (in)</th><th>Packing Done By</th><th>Container No</th><th>Lot No</th><th>Ship Date</th><th>Mode</th><th>BL / AWB No</th><th>Location</th>
+              <th>Date</th><th>Box No</th><th>Box Code</th><th>Lock</th><th>Category</th><th>Master Code</th><th>Stone No.</th><th>Type of Stone</th><th>Dimensions (in)</th><th class="r">Stone Wt (kg each)</th><th class="r">CFT (each)</th><th class="r">No of Stone</th><th class="r">Gross Wt (kg)</th><th>Box Tare (kg)</th><th>Box Size (in)</th><th>Packing Done By</th><th>Container No</th><th>Lot No</th><th>Ship Date</th><th>Mode</th><th>BL / AWB No</th><th>Vehicle No</th><th>Remarks</th><th>Location</th><th class="r">Box Total CFT</th>
             </tr></thead>
             <tbody id="flatTableBody"></tbody>
           </table>
@@ -482,7 +482,7 @@
             </div>
             <div class="tbl-wrap">
               <table class="tbl tbl-stack">
-                <thead><tr><th>Master code (auto-fill)</th><th>Category</th><th>Stone code *</th><th>Colour</th><th>Type of stone</th><th>Size (mm)</th><th>No of stone *</th><th></th></tr></thead>
+                <thead><tr><th>Master code *</th><th>Category / part *</th><th>Stone no. / suffix</th><th>Type of stone</th><th>Dimensions (inches)</th><th>Stone weight (kg each)</th><th>CFT (each)</th><th>No of stone *</th><th></th></tr></thead>
                 <tbody id="stoneLinesBody"></tbody>
               </table>
             </div>
@@ -498,6 +498,9 @@
                 <select id="fMode"><option value="">Select mode</option><option>SEA</option><option>AIR</option><option>COURIER</option><option>ROAD</option></select></div>
               <div><label for="fBl">BL / AWB no.</label><input id="fBl" type="text" placeholder="Bill of lading / AWB" /></div>
               <div><label for="fLocation">Destination</label><input id="fLocation" type="text" value="JOHANNESBURG" /></div>
+              <div><label for="fTareWeight">Box tare weight (kg)</label><input id="fTareWeight" type="number" min="0" step="0.01" placeholder="Empty box weight" /></div>
+              <div><label for="fVehicleNo">Transport vehicle no.</label><input id="fVehicleNo" type="text" placeholder="Vehicle number" /></div>
+              <div><label for="fRemarks">Remarks</label><input id="fRemarks" type="text" placeholder="Optional notes" /></div>
             </div>
           </div>
 
@@ -575,27 +578,26 @@
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:space-between">
           <div>
             <h2 style="font-size:19px;font-weight:800">Master stone codes &amp; categories</h2>
-            <p style="font-size:13px;color:var(--ink-2);margin:3px 0 0">Standard codes so packing operators auto-fill category, colour, type and size.</p>
+            <p style="font-size:13px;color:var(--ink-2);margin:3px 0 0">Choose a Mandir part category (such as Pillar or Base), add your own categories, and maintain its master code and dimensions in inches.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input id="newCategory" type="text" placeholder="New category name…" aria-label="New category name" />
-            <button class="btn btn-dark btn-sm" onclick="addCategory()">+ Add category</button>
+            <button type="button" class="btn btn-dark btn-sm" onclick="addCategory()">+ Add category</button>
             <button class="btn btn-ghost btn-sm no-print" onclick="printSection('master')">Print master codes</button>
           </div>
         </div>
         <form class="sub-panel" onsubmit="handleAddMaster(event)">
-          <div class="form-grid f6">
+          <div class="form-grid f5">
             <div><label for="mcCategory">Category</label><select id="mcCategory" required></select></div>
             <div><label for="mcCode">Stone code</label><input id="mcCode" type="text" required placeholder="e.g. JB-BLK-01" class="mono" style="text-transform:uppercase" /></div>
-            <div><label for="mcColour">Colour</label><input id="mcColour" type="text" placeholder="e.g. Black" /></div>
             <div><label for="mcType">Type of stone</label><input id="mcType" type="text" placeholder="e.g. Polished slab" /></div>
-            <div><label for="mcSize">Size (mm)</label><input id="mcSize" type="text" placeholder="e.g. 600x600x20" /></div>
+            <div><label for="mcSize">Dimensions (inches)</label><input id="mcSize" type="text" placeholder="e.g. 24x24x0.75" /></div>
             <div><label>&nbsp;</label><button type="submit" class="btn btn-amber" style="width:100%;justify-content:center">+ Save code</button></div>
           </div>
         </form>
         <div class="tbl-wrap">
           <table class="tbl tbl-stack">
-            <thead><tr><th>Category</th><th>Stone Code</th><th>Colour</th><th>Type of Stone</th><th>Size (mm)</th><th class="r">Action</th></tr></thead>
+            <thead><tr><th>Category / Part</th><th>Stone Code</th><th>Type of Stone</th><th>Dimensions (inches)</th><th class="r">Action</th></tr></thead>
             <tbody id="masterBody"></tbody>
           </table>
         </div>
@@ -795,12 +797,12 @@
 <script>
 "use strict";
 /* ================= state (session memory; Google Sheet is the shared store) ================= */
-var DEFAULT_CATEGORIES = ["GRANITE","MARBLE","QUARTZ","SANDSTONE","SLATE","COBBLES / PAVERS","MONUMENTS"];
+var DEFAULT_CATEGORIES = ["MANDIR","PILLAR","BASE","GRANITE","MARBLE","QUARTZ","SANDSTONE","SLATE","COBBLES / PAVERS","MONUMENTS"];
 var DEFAULT_MASTER = [
-  {category:"GRANITE", code:"JB-AB-600", colour:"Absolute Black", typeOfStone:"Polished Tiles", sizeMm:"600x600x20"},
-  {category:"GRANITE", code:"JB-TG-600", colour:"Tan Brown", typeOfStone:"Flamed Slabs", sizeMm:"600x300x20"},
-  {category:"MARBLE", code:"JB-WM-800", colour:"White Makrana", typeOfStone:"Honed Tiles", sizeMm:"800x800x18"},
-  {category:"QUARTZ", code:"JB-SW-300", colour:"Sparkle White", typeOfStone:"Engineered Slab", sizeMm:"3000x1400x20"}
+  {category:"GRANITE", code:"JB-AB-600", typeOfStone:"Polished Tiles", sizeIn:"23.62x23.62x0.79"},
+  {category:"GRANITE", code:"JB-TG-600", typeOfStone:"Flamed Slabs", sizeIn:"23.62x11.81x0.79"},
+  {category:"MARBLE", code:"JB-WM-800", typeOfStone:"Honed Tiles", sizeIn:"31.50x31.50x0.71"},
+  {category:"QUARTZ", code:"JB-SW-300", typeOfStone:"Engineered Slab", sizeIn:"118.11x55.12x0.79"}
 ];
 var boxes = [];
 var masterCodes = DEFAULT_MASTER.slice();
@@ -818,6 +820,51 @@ var pollTimer = null;
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function cleanText(v, max){ var s = String(v == null ? "" : v).replace(/[\u0000-\u001F\u007F]/g," ").trim(); return s.slice(0, max || 500); }
+function mmToInches(value){
+  return String(value == null ? "" : value).replace(/mm/ig,"").replace(/\d+(?:\.\d+)?/g,function(n){
+    return (Number(n) / 25.4).toFixed(2).replace(/\.?0+$/,"");
+  }).trim();
+}
+function stoneCft(sizeIn){
+  var match = String(sizeIn == null ? "" : sizeIn).trim().match(/^(\d+(?:\.\d*)?|\.\d+)\s*[x×*]\s*(\d+(?:\.\d*)?|\.\d+)\s*[x×*]\s*(\d+(?:\.\d*)?|\.\d+)$/i);
+  if (!match) return null;
+  var dimensions = match.slice(1).map(Number);
+  if (dimensions.some(function(value){ return !Number.isFinite(value) || value <= 0; })) return null;
+  return dimensions[0] * dimensions[1] * dimensions[2] / 1728;
+}
+function parseStoneDimensions(value){
+  var raw = String(value == null ? "" : value).trim();
+  var match = raw.match(/^(\d+(?:\.\d*)?|\.\d+)\s*[x×*]\s*(\d+(?:\.\d*)?|\.\d+)\s*[x×*]\s*(\d+(?:\.\d*)?|\.\d+)(?:\s*=\s*(\d+)\s*NOS?\.?)?$/i);
+  if (!match) return {sizeIn:raw, quantity:0};
+  return {sizeIn:match[1] + "x" + match[2] + "x" + match[3], quantity:Number(match[4]) || 0};
+}
+function fmtStoneCft(sizeIn){
+  var value = stoneCft(sizeIn);
+  return value == null ? "—" : value.toFixed(3);
+}
+function boxCftTotal(box){
+  if (box && box.boxCft != null && box.boxCft !== "" && Number.isFinite(Number(box.boxCft))) return Number(box.boxCft);
+  return (box && box.items || []).reduce(function(total, item){
+    return total + (stoneCft(item.sizeIn) || 0) * num(item.noOfStone);
+  }, 0);
+}
+function migrateDimensionRecords(){
+  boxes.forEach(function(box){
+    (box.items || []).forEach(function(it){
+      if (it.sizeIn == null && it.sizeMm != null) it.sizeIn = mmToInches(it.sizeMm);
+      delete it.sizeMm;
+      delete it.colour;
+    });
+  });
+  masterCodes.forEach(function(item){
+    if (item.sizeIn == null && item.sizeMm != null) item.sizeIn = mmToInches(item.sizeMm);
+    delete item.sizeMm;
+    delete item.colour;
+  });
+  DEFAULT_CATEGORIES.forEach(function(category){
+    if (categories.indexOf(category) === -1) categories.push(category);
+  });
+}
 function safeNumber(v, max){
   var n = Number(v);
   if (!Number.isFinite(n) || n < 0) return 0;
@@ -846,6 +893,7 @@ function loadLocalState(){
     if (Array.isArray(data.historyLog)) historyLog = data.historyLog.slice(0,30);
     if (typeof data.gasUrl === "string") gasUrl = data.gasUrl;
     syncToken = sessionStorage.getItem(STORAGE_KEY + "-token") || "";
+    migrateDimensionRecords();
     return true;
   } catch(e) { return false; }
 }
@@ -854,6 +902,13 @@ function fmt(n){ return Number(n || 0).toLocaleString("en-IN"); }
 function fmt2(n){ return Number(n || 0).toLocaleString("en-IN",{minimumFractionDigits:2, maximumFractionDigits:2}); }
 function boxStones(b){ return (b.items||[]).reduce(function(s,it){ return s + num(it.noOfStone); },0); }
 function boxCodeOf(b){ var c = b && b.boxCode ? String(b.boxCode).trim().toUpperCase() : ""; return c || ("SWA/JOB/" + String((b && b.boxNo) || "").trim()); }
+function itemMasterCode(it){ return cleanText(it.masterCode || it.code || "", 80).toUpperCase(); }
+function itemStoneNo(it){ return cleanText(it.stoneNo || "", 20).toUpperCase(); }
+function itemCodeLabel(it){
+  var master = itemMasterCode(it), suffix = itemStoneNo(it);
+  if (!master) return suffix;
+  return suffix && !master.endsWith(suffix) ? master + "-" + suffix : master;
+}
 function syncBoxCode(){
   var no = ($("fBoxNo").value || "").trim();
   var codeEl = $("fBoxCode");
@@ -927,7 +982,7 @@ function filteredBoxes(){
     }
     if (q){
       var hay = [b.boxNo, boxCodeOf(b), b.boxCode, b.date, b.packingBy, b.containerNo, b.lotNo, b.blAwbNo, b.location]
-        .concat((b.items||[]).reduce(function(a,it){ return a.concat([it.category,it.code,it.colour,it.typeOfStone,it.sizeMm]); },[]))
+        .concat((b.items||[]).reduce(function(a,it){ return a.concat([it.category,itemMasterCode(it),itemStoneNo(it),itemCodeLabel(it),it.typeOfStone,it.sizeIn]); },[]))
         .join(" ").toLowerCase();
       if (hay.indexOf(q) === -1) return false;
     }
@@ -1006,7 +1061,7 @@ function renderGrouped(){
   wrap.innerHTML = list.map(function(b){
     var open = !!expanded[b.boxNo];
     var isDisp = !!(b.containerNo && String(b.containerNo).trim());
-    var codes = (b.items||[]).map(function(it){ return it.code; }).filter(Boolean).join(", ") || "No codes";
+    var codes = (b.items||[]).map(itemCodeLabel).filter(Boolean).join(", ") || "No codes";
     var head = '<div class="box-head" role="button" tabindex="0" aria-expanded="' + open + '" onclick="toggleExpand(\'' + esc(b.boxNo) + '\')" onkeydown="if(event.key===\'Enter\')toggleExpand(\'' + esc(b.boxNo) + '\')">'
       + '<div class="box-id"><div class="box-no-badge' + (b.locked ? " locked" : "") + '">#' + esc(b.boxNo) + (b.locked ? '<span class="lk">' + ICON_LOCK + '</span>' : '') + '</div>'
       + '<div><div class="box-title">Box ' + esc(b.boxNo) + ' <span class="box-code-chip">' + esc(boxCodeOf(b)) + '</span>'
@@ -1028,15 +1083,19 @@ function renderGrouped(){
     var body = "";
     if (open){
       var rows = (b.items||[]).map(function(it){
-        return '<tr><td data-label="Category">' + esc(it.category || "-") + '</td><td data-label="Stone Code" class="mono" style="font-weight:700">' + esc(it.code || "-") + '</td><td data-label="Colour">' + esc(it.colour || "-") + '</td><td data-label="Type of Stone">' + esc(it.typeOfStone || "-") + '</td><td data-label="Size (mm)">' + esc(it.sizeMm || "-") + '</td><td data-label="No of Stone" class="r" style="font-weight:700">' + fmt(it.noOfStone) + '</td></tr>';
+        return '<tr><td data-label="Category / Part">' + esc(it.category || "-") + '</td><td data-label="Master Code" class="mono" style="font-weight:700">' + esc(itemMasterCode(it) || "-") + '</td><td data-label="Stone No." class="mono">' + esc(itemStoneNo(it) || "-") + '</td><td data-label="Type of Stone">' + esc(it.typeOfStone || "-") + '</td><td data-label="Dimensions (inches)">' + esc(it.sizeIn || "-") + '</td><td data-label="Stone weight (kg each)" class="r">' + (num(it.weightKg) > 0 ? fmt2(it.weightKg) : "—") + '</td><td data-label="CFT (each)" class="r">' + fmtStoneCft(it.sizeIn) + '</td><td data-label="No of Stone" class="r" style="font-weight:700">' + fmt(it.noOfStone) + '</td></tr>';
       }).join("");
-      body = '<div class="box-body"><div class="tbl-wrap"><table class="tbl tbl-stack"><thead><tr><th>Category</th><th>Stone Code</th><th>Colour</th><th>Type of Stone</th><th>Size (mm)</th><th class="r">No of Stone</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      body = '<div class="box-body"><div class="tbl-wrap"><table class="tbl tbl-stack"><thead><tr><th>Category / Part</th><th>Master Code</th><th>Stone No.</th><th>Type of Stone</th><th>Dimensions (inches)</th><th class="r">Stone weight (kg each)</th><th class="r">CFT (each)</th><th class="r">No of Stone</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         + '<div class="dispatch-grid">'
         + '<div><span>Container:</span> <b>' + esc(b.containerNo || "Pending") + '</b></div>'
         + '<div><span>Lot no:</span> <b>' + esc(b.lotNo || "-") + '</b></div>'
         + '<div><span>Ship date:</span> <b>' + esc(b.shipmentDate || "-") + '</b></div>'
         + '<div><span>Mode / BL:</span> <b>' + esc([b.shipmentMode, b.blAwbNo].filter(Boolean).join(" / ") || "-") + '</b></div>'
+        + '<div><span>Box tare:</span> <b>' + (num(b.boxTareWeight) > 0 ? fmt2(b.boxTareWeight) + " kg" : "—") + '</b></div>'
+        + '<div><span>Box total CFT:</span> <b>' + boxCftTotal(b).toFixed(2) + '</b></div>'
+        + '<div><span>Vehicle:</span> <b>' + esc(b.transportVehicleNo || "-") + '</b></div>'
         + '<div><span>Location:</span> <b>' + esc(b.location || "-") + '</b></div>'
+        + '<div><span>Remarks:</span> <b>' + esc(b.remarks || "-") + '</b></div>'
         + '</div>'
         + ((b.items||[]).length === 0 ? '<p style="font-size:12.5px;color:var(--ink-2);margin:0">Loaded from your packing sheet as a pending box. Use Edit to add its stone lines and weight, or import the full Excel file to fill every box at once.</p>' : '')
         + '<div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-dark btn-sm" onclick="openLabel(\'' + esc(b.boxNo) + '\')">Print label for ' + esc(boxCodeOf(b)) + '</button></div>'
@@ -1049,16 +1108,16 @@ function toggleExpand(no){ expanded[no] = !expanded[no]; renderGrouped(); }
 function renderFlat(){
   var list = filteredBoxes();
   var tb = $("flatTableBody");
-  if (!list.length){ tb.innerHTML = '<tr><td colspan="19" class="empty-cell">No rows to display.</td></tr>'; return; }
-  var labels = ["Date","Box No","Box Code","Lock","Category","Stone Code","Colour","Type of Stone","Size (mm)","No of Stone","Box Wt (kg)","Box Size (in)","Packing Done By","Container No","Lot No","Ship Date","Mode","BL / AWB No","Location"];
+  if (!list.length){ tb.innerHTML = '<tr><td colspan="25" class="empty-cell">No rows to display.</td></tr>'; return; }
+  var labels = ["Date","Box No","Box Code","Lock","Category / Part","Master Code","Stone No.","Type of Stone","Dimensions (inches)","Stone Weight (kg each)","CFT (each)","No of Stone","Gross Box Wt (kg)","Box Tare Wt (kg)","Box Size (in)","Packing Done By","Container No","Lot No","Ship Date","Mode","BL / AWB No","Transport Vehicle No","Remarks","Location","Box Total CFT"];
   var html = "";
   list.forEach(function(b){
     var items = (b.items && b.items.length) ? b.items : [{}];
     items.forEach(function(it, idx){
-      var vals = [b.date || "-", b.boxNo, boxCodeOf(b), b.locked ? "LOCKED" : "Open", it.category || "-", it.code || "-", it.colour || "-", it.typeOfStone || "-", it.sizeMm || "-", (it.noOfStone ? fmt(it.noOfStone) : "—"), idx === 0 ? (num(b.boxWeight) > 0 ? fmt2(b.boxWeight) : "—") : "", idx === 0 ? (b.boxSize || "-") : "", b.packingBy || "-", b.containerNo || "-", b.lotNo || "-", b.shipmentDate || "-", b.shipmentMode || "-", b.blAwbNo || "-", b.location || "-"];
+      var vals = [b.date || "-", b.boxNo, boxCodeOf(b), b.locked ? "LOCKED" : "Open", it.category || "-", itemMasterCode(it) || "-", itemStoneNo(it) || "-", it.typeOfStone || "-", it.sizeIn || "-", (num(it.weightKg) > 0 ? fmt2(it.weightKg) : "—"), fmtStoneCft(it.sizeIn), (it.noOfStone ? fmt(it.noOfStone) : "—"), idx === 0 ? (num(b.boxWeight) > 0 ? fmt2(b.boxWeight) : "—") : "", idx === 0 && num(b.boxTareWeight) > 0 ? fmt2(b.boxTareWeight) : "", idx === 0 ? (b.boxSize || "-") : "", b.packingBy || "-", b.containerNo || "-", b.lotNo || "-", b.shipmentDate || "-", b.shipmentMode || "-", b.blAwbNo || "-", b.transportVehicleNo || "-", b.remarks || "-", b.location || "-", idx === 0 ? boxCftTotal(b).toFixed(2) : ""];
       html += "<tr>" + vals.map(function(v, i){
-        var cls = (i === 9 || i === 10) ? ' class="r"' : "";
-        var style = (i === 1 || i === 2) ? ' class="mono" style="font-weight:700"' : "";
+        var cls = (i === 9 || i === 10 || i === 11 || i === 12 || i === 13) ? ' class="r"' : "";
+        var style = (i === 1 || i === 2 || i === 5 || i === 6) ? ' class="mono" style="font-weight:700"' : "";
         return '<td data-label="' + labels[i] + '"' + (style || cls) + '>' + esc(v) + '</td>';
       }).join("") + "</tr>";
     });
@@ -1080,27 +1139,36 @@ function addStoneRow(p){
   var tb = $("stoneLinesBody");
   var tr = document.createElement("tr");
   tr.className = "stone-row";
-  var mcOpts = '<option value="">— Select master code —</option>' + masterCodes.map(function(m){ return '<option value="' + esc(m.code) + '"' + (p.code && m.code.toUpperCase() === p.code.toUpperCase() ? " selected" : "") + '>' + esc(m.code) + ' (' + esc(m.colour || m.category) + ')</option>'; }).join("");
+  var selectedMaster = p.masterCode || p.code || "";
+  var hasMaster = masterCodes.some(function(m){ return m.code.toUpperCase() === selectedMaster.toUpperCase(); });
+  var mcOpts = '<option value="">— Select master code —</option>' + (!hasMaster && selectedMaster ? '<option value="' + esc(selectedMaster) + '" selected>' + esc(selectedMaster) + ' (existing code)</option>' : '')
+    + masterCodes.map(function(m){ return '<option value="' + esc(m.code) + '"' + (m.code.toUpperCase() === selectedMaster.toUpperCase() ? " selected" : "") + '>' + esc(m.code) + ' (' + esc(m.category) + ')</option>'; }).join("");
   var catOpts = '<option value="">Select category</option>' + categories.map(function(c){ return '<option value="' + esc(c) + '"' + ((p.category || "").toUpperCase() === c.toUpperCase() ? " selected" : "") + '>' + esc(c) + '</option>'; }).join("");
   tr.innerHTML =
-    '<td data-label="Master code"><select class="mc-pick" onchange="applyMaster(this)" aria-label="Master code">' + mcOpts + '</select></td>'
+    '<td data-label="Master code"><select class="mc-pick" required onchange="applyMaster(this)" aria-label="Master code">' + mcOpts + '</select></td>'
     + '<td data-label="Category"><select class="r-cat" aria-label="Category">' + catOpts + '</select></td>'
-    + '<td data-label="Stone code"><input class="r-code mono" type="text" required value="' + esc(p.code || "") + '" placeholder="Code" style="text-transform:uppercase" aria-label="Stone code" /></td>'
-    + '<td data-label="Colour"><input class="r-colour" type="text" value="' + esc(p.colour || "") + '" placeholder="Colour" aria-label="Colour" /></td>'
+    + '<td data-label="Stone no. / suffix"><input class="r-suffix mono" type="text" value="' + esc(p.stoneNo || "") + '" placeholder="1, 2, 3A…" maxlength="20" pattern="[A-Za-z0-9]+" title="Use letters and numbers only, e.g. 1 or 3A" style="text-transform:uppercase" aria-label="Stone number or suffix" /></td>'
     + '<td data-label="Type of stone"><input class="r-type" type="text" value="' + esc(p.typeOfStone || "") + '" placeholder="Type" aria-label="Type of stone" /></td>'
-    + '<td data-label="Size (mm)"><input class="r-size" type="text" value="' + esc(p.sizeMm || "") + '" placeholder="Size mm" aria-label="Size in mm" /></td>'
+    + '<td data-label="Dimensions (inches)"><input class="r-size" type="text" value="' + esc(p.sizeIn || "") + '" placeholder="e.g. 24x24x0.75" aria-label="Dimensions in inches" oninput="updateStoneCft(this)" /></td>'
+    + '<td data-label="Stone weight (kg each)"><input class="r-stone-weight" type="number" min="0" step="any" value="' + esc(p.weightKg == null ? "" : p.weightKg) + '" placeholder="kg each" aria-label="Stone weight in kilograms each" /></td>'
+    + '<td data-label="CFT (each)" class="r"><output class="r-cft" aria-label="Cubic feet per stone">' + fmtStoneCft(p.sizeIn) + '</output></td>'
     + '<td data-label="No of stone"><input class="r-qty" type="number" min="1" required value="' + esc(p.noOfStone || "") + '" placeholder="Qty" style="font-weight:700" aria-label="Number of stones" /></td>'
     + '<td data-label=""><div style="display:flex;gap:4px"><button type="button" class="icon-btn" title="Repeat stone details" aria-label="Repeat stone details; change quantity" onclick="repeatStoneRow(this)">⧉</button><button type="button" class="icon-btn" title="Remove line" aria-label="Remove stone line" onclick="removeStoneRow(this)">✕</button></div></td>';
   tb.appendChild(tr);
 }
+function updateStoneCft(input){
+  var output = input.closest("tr").querySelector(".r-cft");
+  output.textContent = fmtStoneCft(input.value);
+}
 function repeatStoneRow(btn){
   var tr = btn.closest("tr");
   var copy = {
+    masterCode: tr.querySelector(".mc-pick").value,
     category: tr.querySelector(".r-cat").value,
-    code: tr.querySelector(".r-code").value,
-    colour: tr.querySelector(".r-colour").value,
+    stoneNo: tr.querySelector(".r-suffix").value,
     typeOfStone: tr.querySelector(".r-type").value,
-    sizeMm: tr.querySelector(".r-size").value,
+    sizeIn: tr.querySelector(".r-size").value,
+    weightKg: tr.querySelector(".r-stone-weight").value,
     noOfStone: tr.querySelector(".r-qty").value
   };
   addStoneRow(copy);
@@ -1119,10 +1187,9 @@ function applyMaster(sel){
   if (!found) return;
   var tr = sel.closest("tr");
   tr.querySelector(".r-cat").value = found.category || "";
-  tr.querySelector(".r-code").value = found.code || "";
-  tr.querySelector(".r-colour").value = found.colour || "";
   tr.querySelector(".r-type").value = found.typeOfStone || "";
-  tr.querySelector(".r-size").value = found.sizeMm || "";
+  tr.querySelector(".r-size").value = found.sizeIn || "";
+  updateStoneCft(tr.querySelector(".r-size"));
 }
 function resetBoxForm(){
   $("boxForm").reset();
@@ -1148,6 +1215,8 @@ function editBox(no){
   $("fPackingBy").value = b.packingBy || ""; $("fContainer").value = b.containerNo || "";
   $("fLot").value = b.lotNo || ""; $("fShipDate").value = b.shipmentDate || "";
   $("fMode").value = b.shipmentMode || ""; $("fBl").value = b.blAwbNo || "";
+  $("fTareWeight").value = b.boxTareWeight || ""; $("fVehicleNo").value = b.transportVehicleNo || "";
+  $("fRemarks").value = b.remarks || "";
   $("fLocation").value = b.location || "JOHANNESBURG";
   $("stoneLinesBody").innerHTML = "";
   (b.items||[]).forEach(function(it){ addStoneRow(it); });
@@ -1170,29 +1239,42 @@ function handleSaveBox(e){
     toast("Box #" + boxNo + " already exists. Edit that box or use a new box number.", "error"); return;
   }
   var items = [];
+  var invalidStoneRow = false;
   var rows = document.querySelectorAll("#stoneLinesBody .stone-row");
   rows.forEach(function(tr){
-    var code = cleanText(tr.querySelector(".r-code").value, 80).toUpperCase();
+    var masterCode = cleanText(tr.querySelector(".mc-pick").value, 80).toUpperCase();
+    var stoneNo = cleanText(tr.querySelector(".r-suffix").value, 20).toUpperCase();
     var qty = safeNumber(tr.querySelector(".r-qty").value, 1000000);
-    if (code || qty > 0) items.push({
+    if (masterCode || stoneNo || qty > 0){
+      if (!masterCode || (qty <= 1 && !stoneNo) || (stoneNo && !/^[A-Z0-9]+$/.test(stoneNo))){
+        toast("Select a master code and enter a stone number for single-stone lines (for example 1 or 3A).", "error");
+        invalidStoneRow = true;
+        return;
+      }
+      items.push({
+      masterCode: masterCode,
+      stoneNo: stoneNo,
       category: cleanText(tr.querySelector(".r-cat").value, 50),
-      code: code,
-      colour: cleanText(tr.querySelector(".r-colour").value, 80),
       typeOfStone: cleanText(tr.querySelector(".r-type").value, 80),
-      sizeMm: cleanText(tr.querySelector(".r-size").value, 50),
+      sizeIn: cleanText(tr.querySelector(".r-size").value, 50),
+      weightKg: tr.querySelector(".r-stone-weight").value === "" ? "" : safeNumber(tr.querySelector(".r-stone-weight").value, 1000000),
       noOfStone: qty
-    });
+      });
+    }
   });
+  if (invalidStoneRow) return;
   if (!items.length){ toast("Enter at least one stone code and quantity.", "warning"); return; }
   var existing = null;
   boxes.forEach(function(b){ if (String(b.boxNo) === editing) existing = b; });
+  var computedBoxCft = items.reduce(function(total, item){ return total + (stoneCft(item.sizeIn) || 0) * num(item.noOfStone); }, 0);
   var obj = {
     date: $("fDate").value, boxNo: boxNo, boxCode: boxCodeVal,
-    boxWeight: safeNumber($("fWeight").value, 10000000), boxSize: cleanText($("fBoxSize").value, 50),
+    boxWeight: safeNumber($("fWeight").value, 10000000), boxTareWeight: safeNumber($("fTareWeight").value, 10000000), boxCft: computedBoxCft, boxSize: cleanText($("fBoxSize").value, 50),
     packingBy: packer,
     containerNo: $("fContainer").value.trim().toUpperCase(),
     lotNo: $("fLot").value.trim(), shipmentDate: $("fShipDate").value,
     shipmentMode: $("fMode").value, blAwbNo: $("fBl").value.trim(),
+    transportVehicleNo: cleanText($("fVehicleNo").value, 80), remarks: cleanText($("fRemarks").value, 500),
     location: $("fLocation").value.trim(),
     locked: existing ? !!existing.locked : false,
     lastModifiedBy: packer || "Operator", lastModifiedAt: nowStamp(),
@@ -1202,7 +1284,7 @@ function handleSaveBox(e){
     for (var i = 0; i < boxes.length; i++){ if (String(boxes[i].boxNo) === editing){ boxes[i] = obj; break; } }
   } else boxes.unshift(obj);
   logHistory({type: editing ? "Box updated" : "New box added", enteredBy: packer || "Operator",
-    source: boxCodeOf(obj) + " — Box #" + obj.boxNo + " (" + items.map(function(i){ return i.code; }).filter(Boolean).join(", ") + ")",
+    source: boxCodeOf(obj) + " — Box #" + obj.boxNo + " (" + items.map(itemCodeLabel).filter(Boolean).join(", ") + ")",
     boxesCount: 1, stonesCount: boxStones(obj)});
   renderAll(); resetBoxForm(); switchTab("packing-list");
   toast("Box #" + obj.boxNo + " saved by " + (packer || "Operator") + ".", "success");
@@ -1287,7 +1369,7 @@ function renderDispatch(){
   $("bulkCount").textContent = Object.keys(dispatchSel).length + " boxes selected";
   if (!boxes.length){ tb.innerHTML = '<tr><td colspan="10" class="empty-cell">No boxes available.</td></tr>'; return; }
   tb.innerHTML = boxes.map(function(b){
-    var codes = (b.items||[]).map(function(it){ return it.code; }).filter(Boolean).join(", ");
+    var codes = (b.items||[]).map(itemCodeLabel).filter(Boolean).join(", ");
     return '<tr><td data-label="Select"><input type="checkbox" style="min-height:0;width:17px;height:17px" ' + (dispatchSel[b.boxNo] ? "checked" : "") + ' onchange="toggleDispatch(\'' + esc(b.boxNo) + '\', this.checked)" aria-label="Select box ' + esc(b.boxNo) + '" /></td>'
       + '<td data-label="Box No" class="mono" style="font-weight:700">#' + esc(b.boxNo) + '</td>'
       + '<td data-label="Box Code" class="mono" style="font-weight:700">' + esc(boxCodeOf(b)) + '</td>'
@@ -1343,7 +1425,7 @@ function addCategory(){
 function handleAddMaster(e){
   e.preventDefault();
   var item = { category: $("mcCategory").value, code: $("mcCode").value.trim().toUpperCase(),
-    colour: $("mcColour").value.trim(), typeOfStone: $("mcType").value.trim(), sizeMm: $("mcSize").value.trim() };
+    typeOfStone: $("mcType").value.trim(), sizeIn: $("mcSize").value.trim() };
   var found = false;
   masterCodes = masterCodes.map(function(m){ if (m.code === item.code){ found = true; return item; } return m; });
   if (!found) masterCodes.unshift(item);
@@ -1356,13 +1438,12 @@ function deleteMaster(code){
 }
 function renderMaster(){
   var tb = $("masterBody");
-  if (!masterCodes.length){ tb.innerHTML = '<tr><td colspan="6" class="empty-cell">No master stone codes yet.</td></tr>'; return; }
+  if (!masterCodes.length){ tb.innerHTML = '<tr><td colspan="5" class="empty-cell">No master stone codes yet.</td></tr>'; return; }
   tb.innerHTML = masterCodes.map(function(m){
     return '<tr><td data-label="Category" style="font-weight:600">' + esc(m.category) + '</td>'
       + '<td data-label="Stone Code" class="mono" style="font-weight:700">' + esc(m.code) + '</td>'
-      + '<td data-label="Colour">' + esc(m.colour || "-") + '</td>'
       + '<td data-label="Type of Stone">' + esc(m.typeOfStone || "-") + '</td>'
-      + '<td data-label="Size (mm)">' + esc(m.sizeMm || "-") + '</td>'
+      + '<td data-label="Dimensions (inches)">' + esc(m.sizeIn || "-") + '</td>'
       + '<td data-label="Action" class="r"><button class="link-btn" style="color:var(--bad)" onclick="deleteMaster(\'' + esc(m.code) + '\')">Delete</button></td></tr>';
   }).join("");
 }
@@ -1484,13 +1565,14 @@ function download(content, filename, mime){
   setTimeout(function(){ URL.revokeObjectURL(url); }, 500);
 }
 function csvOf(list){
-  var head = ["Date","Box No","Box Code","Lock Status","Category","Stone Code","Colour","Type of Stone","Size (mm)","No of Stone","Box Weight (Kg)","Box Size (in)","Packing Done By","Container No","Lot No","Shipment Date","Shipment Mode","BL / AWB No","Location"];
+  var head = ["Date","Box No","Box Code","Lock Status","Category / Part","Master Code","Stone No","Type of Stone","Dimensions (inches)","Stone Weight (kg each)","CFT (each)","No of Stone","Gross Box Weight (Kg)","Box Tare Weight (Kg)","Box Size (in)","Packing Done By","Container No","Lot No","Shipment Date","Shipment Mode","BL / AWB No","Transport Vehicle No","Remarks","Location","Box Total CFT"];
   var rows = [head.join(",")];
   list.forEach(function(b){
     var items = (b.items && b.items.length) ? b.items : [{}];
     items.forEach(function(it, idx){
-      rows.push([b.date, b.boxNo, boxCodeOf(b), b.locked ? "LOCKED" : "OPEN", it.category, it.code, it.colour, it.typeOfStone, it.sizeMm, it.noOfStone || 0,
-        idx === 0 ? b.boxWeight : "", idx === 0 ? b.boxSize : "", b.packingBy, b.containerNo, b.lotNo, b.shipmentDate, b.shipmentMode, b.blAwbNo, b.location]
+      var cft = stoneCft(it.sizeIn);
+      rows.push([b.date, b.boxNo, boxCodeOf(b), b.locked ? "LOCKED" : "OPEN", it.category, itemMasterCode(it), itemStoneNo(it), it.typeOfStone, it.sizeIn, it.weightKg == null || it.weightKg === "" ? "" : it.weightKg, cft == null ? "" : cft, it.noOfStone || 0,
+        idx === 0 ? b.boxWeight : "", idx === 0 ? b.boxTareWeight : "", idx === 0 ? b.boxSize : "", b.packingBy, b.containerNo, b.lotNo, b.shipmentDate, b.shipmentMode, b.blAwbNo, b.transportVehicleNo, b.remarks, b.location, idx === 0 ? boxCftTotal(b) : ""]
         .map(function(v){ return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }).join(","));
     });
   });
@@ -1560,9 +1642,11 @@ function pullFromSheet(silent){
       if (data.status === "error") throw new Error(data.message || "Apps Script error.");
       var inBoxes = Array.isArray(data.boxes) ? data.boxes : [];
       var inCodes = Array.isArray(data.masterCodes) ? data.masterCodes : [];
-      var changed = JSON.stringify(boxes) !== JSON.stringify(inBoxes);
+      var previousBoxes = JSON.stringify(boxes);
       boxes = inBoxes;
       if (inCodes.length) masterCodes = inCodes;
+      migrateDimensionRecords();
+      var changed = previousBoxes !== JSON.stringify(boxes);
       setSyncUI(true, new Date().toLocaleTimeString("en-IN"));
       renderAll(); renderMaster(); populateCategories();
       if (!silent || changed){
@@ -1615,38 +1699,124 @@ function importFile(ev){
         if (rs.indexOf("BOX") > -1 && (rs.indexOf("STONE") > -1 || rs.indexOf("CODE") > -1)){ hIdx = i; break; }
       }
       var headers = rows[hIdx].map(function(h){ return String(h || "").trim().toUpperCase(); });
-      function col(keys, fb){ for (var k = 0; k < headers.length; k++){ for (var j = 0; j < keys.length; j++){ if (headers[k].indexOf(keys[j]) > -1) return k; } } return fb; }
-      function colOpt(keys){ for (var k = 0; k < headers.length; k++){ for (var j = 0; j < keys.length; j++){ if (headers[k].indexOf(keys[j]) > -1) return k; } } return -1; }
-      var cBoxCode = colOpt(["BOX CODE","SWA/JOB","SWA"]);
-      var cCodeStone = colOpt(["STONE CODE","STONECODE"]);
-      if (cCodeStone === -1){ for (var ck = 0; ck < headers.length; ck++){ if (ck !== cBoxCode && headers[ck].indexOf("CODE") > -1){ cCodeStone = ck; break; } } if (cCodeStone === -1) cCodeStone = 3; }
-      var cDate = col(["DATE"],0), cBox = col(["BOX NO","BOX"],1), cCat = col(["CATEGORY"],2), cCode = cCodeStone,
-          cCol = col(["COLOUR","COLOR"],4), cType = col(["TYPE"],5), cSize = col(["SIZE"],6), cQty = col(["NO OF STONE","QTY","STONES"],7),
-          cWt = col(["WEIGHT","WT"],8), cBoxSz = col(["BOX SIZE"],9), cBy = col(["PACKING","DONE BY"],10), cCont = col(["CONTAINER"],11),
-          cLot = col(["LOT"],12), cShip = col(["SHIPMENT DATE","SHIP DATE"],13), cMode = col(["MODE"],14), cBl = col(["BL","AWB"],15), cLoc = col(["LOCATION"],16);
-      function fmtD(v){ if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10); return String(v || "").trim(); }
-      var map = {}, order = [];
-      for (var r = hIdx + 1; r < rows.length; r++){
-        var row = rows[r];
-        var boxNo = String(row[cBox] || "").trim();
-        if (!boxNo || boxNo.toUpperCase() === "TOTAL") continue;
-        if (!map[boxNo]){
-          map[boxNo] = { date: fmtD(row[cDate]), boxNo: boxNo, boxCode: (cBoxCode > -1 && String(row[cBoxCode] || "").trim()) ? String(row[cBoxCode]).trim().toUpperCase() : ("SWA/JOB/" + boxNo), boxWeight: num(row[cWt]), boxSize: String(row[cBoxSz] || "").trim(),
-            packingBy: String(row[cBy] || "").trim(), containerNo: String(row[cCont] || "").trim().toUpperCase(),
-            lotNo: String(row[cLot] || "").trim(), shipmentDate: fmtD(row[cShip]), shipmentMode: String(row[cMode] || "").trim().toUpperCase(),
-            blAwbNo: String(row[cBl] || "").trim(), location: String(row[cLoc] || "JOHANNESBURG").trim(),
-            locked:false, lastModifiedBy: String(row[cBy] || "Excel Import").trim(), lastModifiedAt: nowStamp(), items: [] };
-          order.push(boxNo);
+      function normalizedHeader(v){ return String(v || "").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim(); }
+      function colOpt(keys){
+        for (var j = 0; j < keys.length; j++){
+          var key = normalizedHeader(keys[j]);
+          for (var k = 0; k < headers.length; k++){
+            var header = normalizedHeader(headers[k]);
+            if (header === key || header.indexOf(key + " ") === 0) return k;
+          }
         }
-        var code = String(row[cCode] || "").trim().toUpperCase();
-        var cat = String(row[cCat] || "").trim().toUpperCase();
-        var qty = num(row[cQty]);
-        if (code || qty > 0){
-          map[boxNo].items.push({ category: cat, code: code, colour: String(row[cCol] || "").trim(),
-            typeOfStone: String(row[cType] || "").trim(), sizeMm: String(row[cSize] || "").trim(), noOfStone: qty });
+        return -1;
+      }
+      function col(keys, fb){ var idx = colOpt(keys); return idx > -1 ? idx : fb; }
+      function cell(row, index){ return index > -1 ? row[index] : ""; }
+      function text(row, index){ return String(cell(row, index) || "").trim(); }
+      var cBoxCode = colOpt(["BOX CODE","SWA/JOB","SWA"]);
+      var cMaster = colOpt(["MASTER CODE","MASTER STONE CODE"]);
+      var cStoneNo = colOpt(["STONE NO","STONE NUMBER","SUFFIX"]);
+      var cLegacyCode = colOpt(["STONE CODE","STONECODE"]);
+      if (cLegacyCode === cMaster || cLegacyCode === cStoneNo) cLegacyCode = -1;
+      if (cLegacyCode === -1 && cMaster === -1){ for (var ck = 0; ck < headers.length; ck++){ if (ck !== cBoxCode && headers[ck].indexOf("CODE") > -1){ cLegacyCode = ck; break; } } }
+      var cChotakNo = colOpt(["CHOTAK NO"]);
+      var       cDate = col(["PAKING DATE","PACKING DATE","PACK DATE","DATE"],0), cBox = col(["BOX NO","BOX NUMBER","BOX"],1),
+          cCat = colOpt(["CATEGORY / PART","CATEGORY","PART"]), cType = colOpt(["TYPE OF STONE","STONE TYPE","TYPE"]),
+          cSize = col(["STONE SIZE","DIMENSIONS","SIZE"],6), cQty = colOpt(["NO OF STONE","STONE QTY","QTY","QUANTITY"]),
+          cStoneWt = colOpt(["STONE WEIGHT","WEIGHT PER STONE","STONE WT"]),
+          cTotalWt = colOpt(["TOTAL WEIGHT","GROSS WEIGHT"]), cTareWt = colOpt(["BOX WEIGHT","BOX WT","TARE WEIGHT"]),
+          cTotalCft = colOpt(["TOTAL CFT"]),
+          cWt = cTotalWt > -1 ? cTotalWt : cTareWt,
+          cBoxSz = colOpt(["BOX SIZE"]), cBy = colOpt(["PACKING DONE BY","PACKED BY","PACKING BY"]),
+          cCont = colOpt(["CONTAINER NO","CONTAINER"]), cLot = colOpt(["LOT NO","LOT"]),
+          cShip = colOpt(["SHIPMENT DATE","SHIP DATE"]), cMode = colOpt(["SHIPMENT MODE","MODE"]),
+          cBl = colOpt(["BL / AWB","BL AWB","AWB"]), cLoc = colOpt(["LOCATION","DESTINATION"]),
+          cVehicle = colOpt(["TRANSPORT VEHICAL NO","TRANSPORT VEHICLE NO","VEHICLE NO"]),
+          cRemarks = colOpt(["REMARKS","REMARK","REEMARK"]);
+      function fmtD(v){
+        if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+        if (typeof v === "number" && Number.isFinite(v) && v > 0) return new Date(Date.UTC(1899,11,30) + Math.floor(v) * 86400000).toISOString().slice(0,10);
+        var value = String(v || "").trim();
+        var match = value.match(/^(\d{1,2})\/(\d{1,2})\/?(\d{4})$/);
+        if (match){
+          var day = Number(match[1]), month = Number(match[2]), year = Number(match[3]);
+          var parsed = new Date(Date.UTC(year, month - 1, day));
+          if (parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day) return parsed.toISOString().slice(0,10);
+        }
+        return value;
+      }
+      function sizeIn(v){ var value = String(v || "").trim(); return /MM/.test(headers[cSize] || "") ? mmToInches(value) : value; }
+      function boxIdentity(value){
+        var raw = String(value || "").trim();
+        var match = raw.match(/^(\d+)\s+SWA\/JOB$/i) || raw.match(/^SWA\/JOB\/(\d+)$/i);
+        return match ? {boxNo:match[1], boxCode:"SWA/JOB/" + match[1]} : {boxNo:raw, boxCode:""};
+      }
+      var sectionText = "";
+      for (var ti = 0; ti < hIdx; ti++){
+        var titleLine = (rows[ti] || []).map(function(v){ return String(v || "").trim(); }).filter(Boolean).join(" ").toUpperCase();
+        if (titleLine.indexOf("STONE") > -1 && !/STONE\s+(NO|NUMBER|SIZE|WEIGHT)/.test(titleLine)) sectionText = titleLine;
+      }
+      var sectionWords = sectionText.split(/\s+/).filter(Boolean);
+      var sectionCategory = sectionWords.length > 1 ? sectionWords.shift() : "";
+      var sectionType = sectionWords.join(" ");
+      var map = {}, order = [];
+      var currentBoxNo = "";
+      for (var r = hIdx + 1; r < rows.length; r++){
+        var row = rows[r] || [];
+        var rawBox = text(row, cBox);
+        var rawStoneNo = text(row, cStoneNo);
+        var normalizedBoxHeader = normalizedHeader(rawBox);
+        var normalizedStoneHeader = normalizedHeader(rawStoneNo);
+        if (normalizedBoxHeader === "BOX NO" || normalizedBoxHeader === "BOX NUMBER" || normalizedStoneHeader === "STONE NO" || normalizedStoneHeader === "STONE NUMBER"){
+          currentBoxNo = "";
+          continue;
+        }
+        if (rawBox.toUpperCase() === "TOTAL"){ currentBoxNo = ""; continue; }
+        if (rawBox){
+          var identity = boxIdentity(rawBox);
+          currentBoxNo = identity.boxNo;
+          if (!currentBoxNo) continue;
+          if (!map[currentBoxNo]){
+            var sourceBoxCode = text(row, cBoxCode);
+            map[currentBoxNo] = {
+              date: fmtD(cell(row, cDate)), boxNo: currentBoxNo,
+              boxCode: (sourceBoxCode || identity.boxCode || ("SWA/JOB/" + currentBoxNo)).toUpperCase(),
+              boxWeight: num(cWt > -1 ? cell(row, cWt) : 0),
+              boxCft: cTotalCft > -1 && String(cell(row, cTotalCft) || "").trim() ? num(cell(row, cTotalCft)) : "",
+              boxTareWeight: cTotalWt > -1 && cTareWt > -1 ? num(cell(row, cTareWt)) : "",
+              boxSize: text(row, cBoxSz), packingBy: text(row, cBy),
+              containerNo: text(row, cCont).toUpperCase(), lotNo: text(row, cLot),
+              shipmentDate: fmtD(cell(row, cShip)), shipmentMode: text(row, cMode).toUpperCase(),
+              blAwbNo: text(row, cBl), transportVehicleNo: text(row, cVehicle), remarks: text(row, cRemarks),
+              location: text(row, cLoc) || "JOHANNESBURG", locked:false,
+              lastModifiedBy: text(row, cBy) || "Excel Import", lastModifiedAt: nowStamp(), items:[]
+            };
+            order.push(currentBoxNo);
+          }
+        }
+        var stoneCode = rawStoneNo || text(row, cLegacyCode) || text(row, cMaster);
+        var legacyCode = cLegacyCode > -1 ? text(row, cLegacyCode).toUpperCase() : "";
+        var masterCode = (cMaster > -1 ? text(row, cMaster).toUpperCase() : "") || legacyCode;
+        var stoneNo = cStoneNo > -1 ? rawStoneNo.toUpperCase() : "";
+        if (!masterCode && cStoneNo > -1 && cChotakNo > -1){
+          masterCode = rawStoneNo.toUpperCase();
+          stoneNo = text(row, cChotakNo).toUpperCase();
+        }
+        if (!masterCode && cStoneNo > -1 && cLegacyCode === -1) masterCode = rawStoneNo.toUpperCase();
+        var cat = (cCat > -1 ? text(row, cCat) : "").toUpperCase() || sectionCategory;
+        var typeOfStone = text(row, cType) || sectionType;
+        var parsedSize = parseStoneDimensions(sizeIn(cell(row, cSize)));
+        var sourceQty = cQty > -1 && String(cell(row, cQty) || "").trim() ? num(cell(row, cQty)) : 0;
+        var qty = sourceQty > 0 ? sourceQty : parsedSize.quantity || 1;
+        if (!currentBoxNo || !map[currentBoxNo] || !stoneCode) continue;
+        if (masterCode || stoneNo || qty > 0){
+          map[currentBoxNo].items.push({ category: cat, masterCode: masterCode, stoneNo: stoneNo,
+            typeOfStone: typeOfStone, sizeIn: parsedSize.sizeIn,
+            weightKg: cStoneWt > -1 && String(cell(row, cStoneWt) || "").trim() ? num(cell(row, cStoneWt)) / (sourceQty > 0 ? 1 : parsedSize.quantity || 1) : "",
+            noOfStone: qty });
           if (cat && categories.indexOf(cat) === -1) categories.push(cat);
-          if (code && !masterCodes.some(function(m){ return m.code === code; })){
-            masterCodes.push({category: cat || "GRANITE", code: code, colour: String(row[cCol] || "").trim(), typeOfStone: String(row[cType] || "").trim(), sizeMm: String(row[cSize] || "").trim()});
+          if (masterCode && !masterCodes.some(function(m){ return m.code.toUpperCase() === masterCode; })){
+            masterCodes.push({category: cat, code: masterCode, typeOfStone: typeOfStone, sizeIn: parsedSize.sizeIn});
           }
         }
       }
@@ -1657,7 +1827,7 @@ function importFile(ev){
       var stones = boxes.reduce(function(s,b){ return s + boxStones(b); }, 0);
       logHistory({type:"Excel / CSV import", enteredBy: (imported[0] && imported[0].packingBy) || "File upload", source: file.name + " (" + sheetName + ")", boxesCount: boxes.length, stonesCount: stones});
       toast("Imported " + boxes.length + " boxes (" + fmt(stones) + " stones) from " + file.name + ".", "success");
-      if (gasUrl) pushAllToSheet(false);
+      if (gasUrl && syncToken) pushAllToSheet(false);
     } catch(err){ toast("Import error: " + err.message, "error"); }
     ev.target.value = "";
   };
@@ -1670,13 +1840,13 @@ function loadDemoBoxes(){
       containerNo: "CONTAINER 3", lotNo: "LOT-JB-01", shipmentDate: today, shipmentMode: "SEA", blAwbNo: "BL9928310",
       location: "JOHANNESBURG", locked: true, lastModifiedBy: "Ramesh", lastModifiedAt: nowStamp(),
       items: [
-        {category:"GRANITE", code:"JB-AB-600", colour:"Absolute Black", typeOfStone:"Polished Tiles", sizeMm:"600x600x20", noOfStone:12},
-        {category:"GRANITE", code:"JB-TG-600", colour:"Tan Brown", typeOfStone:"Flamed Slabs", sizeMm:"600x300x20", noOfStone:8}
+        {category:"GRANITE", masterCode:"JB-AB-600", stoneNo:"1", typeOfStone:"Polished Tiles", sizeIn:"23.62x23.62x0.79", noOfStone:12},
+        {category:"GRANITE", masterCode:"JB-TG-600", stoneNo:"3A", typeOfStone:"Flamed Slabs", sizeIn:"23.62x11.81x0.79", noOfStone:8}
       ]},
     { date: today, boxNo: "5002", boxCode: "SWA/JOB/5002", boxWeight: 19.2, boxSize: "14x12x10", packingBy: "Suresh",
       containerNo: "", lotNo: "LOT-JB-02", shipmentDate: "", shipmentMode: "", blAwbNo: "",
       location: "JOHANNESBURG", locked: false, lastModifiedBy: "Suresh", lastModifiedAt: nowStamp(),
-      items: [ {category:"MARBLE", code:"JB-WM-800", colour:"White Makrana", typeOfStone:"Honed Tiles", sizeMm:"800x800x18", noOfStone:10} ]}
+      items: [ {category:"MARBLE", masterCode:"JB-WM-800", stoneNo:"2", typeOfStone:"Honed Tiles", sizeIn:"31.50x31.50x0.71", noOfStone:10} ]}
   ];
   logHistory({type:"Demo boxes loaded", enteredBy:"Demo preview", source:"2 sample Johannesburg boxes", boxesCount:2, stonesCount:30});
   renderAll(); switchTab("packing-list");
@@ -1686,12 +1856,15 @@ function loadDemoBoxes(){
 /* ================= label & print ================= */
 function labelHTML(b){
   var rows = (b.items||[]).length ? (b.items||[]).map(function(it){
-    return '<tr><td class="mono" style="font-weight:700">' + esc(it.code || "-") + '</td>'
+    return '<tr><td class="mono" style="font-weight:700">' + esc(itemMasterCode(it) || "-") + '</td>'
+      + '<td class="mono">' + esc(itemStoneNo(it) || "-") + '</td>'
       + '<td>' + esc(it.category || "-") + '</td>'
-      + '<td>' + esc([it.colour, it.typeOfStone].filter(Boolean).join(" — ") || "-") + '</td>'
-      + '<td>' + esc(it.sizeMm || "-") + '</td>'
+      + '<td>' + esc(it.typeOfStone || "-") + '</td>'
+      + '<td>' + esc(it.sizeIn || "-") + '</td>'
+      + '<td style="text-align:right">' + (num(it.weightKg) > 0 ? fmt2(it.weightKg) : "—") + '</td>'
+      + '<td style="text-align:right">' + fmtStoneCft(it.sizeIn) + '</td>'
       + '<td style="text-align:right;font-weight:700">' + fmt(it.noOfStone) + '</td></tr>';
-  }).join("") : '<tr><td colspan="5" style="text-align:center;color:#52606d">Stone details pending — add items in Edit Box</td></tr>';
+  }).join("") : '<tr><td colspan="8" style="text-align:center;color:#52606d">Stone details pending — add items in Edit Box</td></tr>';
   return '<div class="label-page">'
     + '<div class="label-top"><div><div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#52606d">EXPORT CARTON LABEL — STICK ON BOX</div>'
     + '<div class="label-code-big">' + esc(boxCodeOf(b)) + '</div>'
@@ -1699,11 +1872,13 @@ function labelHTML(b){
     + '<div style="text-align:right"><div style="font-size:11px;color:#52606d">BOX NO.</div><div style="font-size:28px;font-weight:800" class="mono">#' + esc(b.boxNo) + '</div><div style="font-size:11px;color:#52606d">Box Code</div><div class="label-code" style="font-size:14px">' + esc(boxCodeOf(b)) + '</div></div></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px;padding:10px 0">'
     + '<div><b>Date:</b> ' + esc(b.date || "-") + '</div><div><b>Gross weight:</b> ' + fmt2(b.boxWeight) + ' kg</div>'
-    + '<div><b>Box size:</b> ' + esc(b.boxSize || "-") + ' in</div><div><b>Total stones:</b> ' + fmt(boxStones(b)) + ' pcs</div>'
-    + '<div><b>Lot / BL:</b> ' + esc([b.lotNo, b.blAwbNo].filter(Boolean).join(" / ") || "-") + '</div><div><b>Packed by:</b> ' + esc(b.packingBy || "-") + '</div></div>'
+    + '<div><b>Box size:</b> ' + esc(b.boxSize || "-") + ' in</div><div><b>Box tare:</b> ' + (num(b.boxTareWeight) > 0 ? fmt2(b.boxTareWeight) + " kg" : "—") + '</div>'
+    + '<div><b>Vehicle:</b> ' + esc(b.transportVehicleNo || "-") + '</div><div><b>Total stones:</b> ' + fmt(boxStones(b)) + ' pcs</div>'
+    + '<div><b>Lot / BL:</b> ' + esc([b.lotNo, b.blAwbNo].filter(Boolean).join(" / ") || "-") + '</div><div><b>Packed by:</b> ' + esc(b.packingBy || "-") + '</div>'
+    + (b.remarks ? '<div style="grid-column:1 / -1"><b>Remarks:</b> ' + esc(b.remarks) + '</div>' : '') + '</div>'
     + '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:2px">Items inside this box</div>'
-    + '<table><thead><tr><th>Stone Code</th><th>Category</th><th>Stone / Colour</th><th>Size (mm)</th><th style="text-align:right">Qty</th></tr></thead><tbody>' + rows + '</tbody>'
-    + '<tfoot><tr><td colspan="4" style="font-weight:700">Total</td><td style="text-align:right;font-weight:800">' + fmt(boxStones(b)) + ' pcs · ' + fmt2(b.boxWeight) + ' kg</td></tr></tfoot></table>'
+    + '<table><thead><tr><th>Master Code</th><th>Stone No.</th><th>Category / Part</th><th>Type of Stone</th><th>Dimensions (inches)</th><th style="text-align:right">Stone Wt (kg each)</th><th style="text-align:right">CFT (each)</th><th style="text-align:right">Qty</th></tr></thead><tbody>' + rows + '</tbody>'
+    + '<tfoot><tr><td colspan="7" style="font-weight:700">Total</td><td style="text-align:right;font-weight:800">' + fmt(boxStones(b)) + ' pcs · ' + fmt2(b.boxWeight) + ' kg gross</td></tr></tfoot></table>'
     + '<div style="font-size:11px;color:#52606d;margin-top:8px">Handle with care — stone export packing · ' + esc(boxCodeOf(b)) + ' · Box #' + esc(b.boxNo) + '</div>'
     + '</div>';
 }
@@ -1731,9 +1906,9 @@ function printFormLabel(){
   if (!no){ toast("Enter a box number first, then print its label.", "warning"); return; }
   var items = [];
   document.querySelectorAll("#stoneLinesBody .stone-row").forEach(function(tr){
-    items.push({ category: tr.querySelector(".r-cat").value, code: tr.querySelector(".r-code").value.trim().toUpperCase(), colour: tr.querySelector(".r-colour").value.trim(), typeOfStone: tr.querySelector(".r-type").value.trim(), sizeMm: tr.querySelector(".r-size").value.trim(), noOfStone: num(tr.querySelector(".r-qty").value) });
+    items.push({ category: tr.querySelector(".r-cat").value, masterCode: tr.querySelector(".mc-pick").value, stoneNo: tr.querySelector(".r-suffix").value.trim().toUpperCase(), typeOfStone: tr.querySelector(".r-type").value.trim(), sizeIn: tr.querySelector(".r-size").value.trim(), weightKg: num(tr.querySelector(".r-stone-weight").value), noOfStone: num(tr.querySelector(".r-qty").value) });
   });
-  var tmp = { boxNo: no, boxCode: code, date: $("fDate").value, boxWeight: num($("fWeight").value), boxSize: $("fBoxSize").value.trim(), packingBy: $("fPackingBy").value.trim(), containerNo: $("fContainer").value.trim(), lotNo: $("fLot").value.trim(), blAwbNo: $("fBl").value.trim(), location: $("fLocation").value.trim() || "JOHANNESBURG", items: items };
+  var tmp = { boxNo: no, boxCode: code, date: $("fDate").value, boxWeight: num($("fWeight").value), boxTareWeight: num($("fTareWeight").value), boxSize: $("fBoxSize").value.trim(), packingBy: $("fPackingBy").value.trim(), containerNo: $("fContainer").value.trim(), lotNo: $("fLot").value.trim(), blAwbNo: $("fBl").value.trim(), transportVehicleNo: $("fVehicleNo").value.trim(), remarks: $("fRemarks").value.trim(), location: $("fLocation").value.trim() || "JOHANNESBURG", items: items };
   $("labelContent").innerHTML = labelHTML(tmp);
   $("labelModal").classList.remove("hidden");
 }
@@ -1776,10 +1951,10 @@ function printSection(which){
     list.forEach(function(b){
       var items = (b.items && b.items.length) ? b.items : [{}];
       items.forEach(function(it, idx){
-        rowsHtml += "<tr><td>" + esc(b.date || "") + "</td><td><b>" + esc(b.boxNo) + "</b></td><td><b>" + esc(boxCodeOf(b)) + "</b></td><td>" + esc(it.category || "") + "</td><td>" + esc(it.code || "") + "</td><td>" + esc(it.colour || "") + "</td><td>" + esc(it.typeOfStone || "") + "</td><td>" + esc(it.sizeMm || "") + "</td><td style='text-align:right'>" + fmt(it.noOfStone) + "</td><td style='text-align:right'>" + (idx === 0 ? fmt2(b.boxWeight) : "") + "</td><td>" + esc(b.packingBy || "") + "</td><td>" + esc(b.containerNo || "Pending") + "</td><td>" + esc(b.location || "") + "</td></tr>";
+        rowsHtml += "<tr><td>" + esc(b.date || "") + "</td><td><b>" + esc(b.boxNo) + "</b></td><td><b>" + esc(boxCodeOf(b)) + "</b></td><td>" + esc(it.category || "") + "</td><td>" + esc(itemMasterCode(it)) + "</td><td>" + esc(itemStoneNo(it)) + "</td><td>" + esc(it.typeOfStone || "") + "</td><td>" + esc(it.sizeIn || "") + "</td><td style='text-align:right'>" + (num(it.weightKg) > 0 ? fmt2(it.weightKg) : "—") + "</td><td style='text-align:right'>" + fmtStoneCft(it.sizeIn) + "</td><td style='text-align:right'>" + fmt(it.noOfStone) + "</td><td style='text-align:right'>" + (idx === 0 ? fmt2(b.boxWeight) : "") + "</td><td style='text-align:right'>" + (idx === 0 && num(b.boxTareWeight) > 0 ? fmt2(b.boxTareWeight) : "") + "</td><td>" + esc(b.packingBy || "") + "</td><td>" + esc(b.containerNo || "Pending") + "</td><td>" + esc(b.transportVehicleNo || "") + "</td><td>" + esc(b.remarks || "") + "</td><td>" + esc(b.location || "") + "</td><td style='text-align:right'>" + (idx === 0 ? boxCftTotal(b).toFixed(2) : "") + "</td></tr>";
       });
     });
-    body = "<table><thead><tr><th>Date</th><th>Box No</th><th>Box Code</th><th>Category</th><th>Stone Code</th><th>Colour</th><th>Type</th><th>Size (mm)</th><th>Stones</th><th>Wt (kg)</th><th>Packer</th><th>Container</th><th>Location</th></tr></thead><tbody>" + rowsHtml + "</tbody></table>"
+    body = "<table><thead><tr><th>Date</th><th>Box No</th><th>Box Code</th><th>Category / Part</th><th>Master Code</th><th>Stone No.</th><th>Type</th><th>Dimensions (inches)</th><th>Stone Wt (kg each)</th><th>CFT (each)</th><th>Stones</th><th>Gross Wt (kg)</th><th>Box Tare (kg)</th><th>Packer</th><th>Container</th><th>Vehicle</th><th>Remarks</th><th>Location</th><th>Box Total CFT</th></tr></thead><tbody>" + rowsHtml + "</tbody></table>"
       + "<p style='font-size:11px;margin-top:10px'>Showing " + list.length + " of " + boxes.length + " box(es) · Printed " + esc(nowStamp()) + "</p>";
   } else if (which === "containers"){
     title = "CONTAINER DETAILS — PRINTOUT";
@@ -1795,14 +1970,14 @@ function printSection(which){
     Object.keys(byCont).sort().forEach(function(k){
       body += "<h3 style='font-size:13px;margin:16px 0 6px'>" + esc(k) + " — box details (" + byCont[k].length + " box(es))</h3>"
         + "<table><thead><tr><th>Box Code</th><th>Box No</th><th>Stone Codes</th><th style='text-align:right'>Stones</th><th style='text-align:right'>Weight (kg)</th><th>Lot</th><th>Ship Date</th><th>BL / AWB</th></tr></thead><tbody>"
-        + byCont[k].map(function(b){ return "<tr><td><b>" + esc(boxCodeOf(b)) + "</b></td><td>" + esc(b.boxNo) + "</td><td>" + esc((b.items||[]).map(function(it){ return it.code; }).filter(Boolean).join(", ") || "-") + "</td><td style='text-align:right'>" + fmt(boxStones(b)) + "</td><td style='text-align:right'>" + fmt2(b.boxWeight) + "</td><td>" + esc(b.lotNo || "-") + "</td><td>" + esc(b.shipmentDate || "-") + "</td><td>" + esc(b.blAwbNo || "-") + "</td></tr>"; }).join("")
+        + byCont[k].map(function(b){ return "<tr><td><b>" + esc(boxCodeOf(b)) + "</b></td><td>" + esc(b.boxNo) + "</td><td>" + esc((b.items||[]).map(itemCodeLabel).filter(Boolean).join(", ") || "-") + "</td><td style='text-align:right'>" + fmt(boxStones(b)) + "</td><td style='text-align:right'>" + fmt2(b.boxWeight) + "</td><td>" + esc(b.lotNo || "-") + "</td><td>" + esc(b.shipmentDate || "-") + "</td><td>" + esc(b.blAwbNo || "-") + "</td></tr>"; }).join("")
         + "</tbody></table>";
     });
     body += "<p style='font-size:11px;margin-top:10px'>Printed " + esc(nowStamp()) + "</p>";
   } else if (which === "master"){
     title = "MASTER STONE CODES — PRINTOUT";
-    var rowsM = masterCodes.map(function(m){ return "<tr><td>" + esc(m.category) + "</td><td><b>" + esc(m.code) + "</b></td><td>" + esc(m.colour || "-") + "</td><td>" + esc(m.typeOfStone || "-") + "</td><td>" + esc(m.sizeMm || "-") + "</td></tr>"; }).join("");
-    body = "<table><thead><tr><th>Category</th><th>Stone Code</th><th>Colour</th><th>Type of Stone</th><th>Size (mm)</th></tr></thead><tbody>" + rowsM + "</tbody></table>"
+    var rowsM = masterCodes.map(function(m){ return "<tr><td>" + esc(m.category) + "</td><td><b>" + esc(m.code) + "</b></td><td>" + esc(m.typeOfStone || "-") + "</td><td>" + esc(m.sizeIn || "-") + "</td></tr>"; }).join("");
+    body = "<table><thead><tr><th>Category / Part</th><th>Master Code</th><th>Type of Stone</th><th>Dimensions (inches)</th></tr></thead><tbody>" + rowsM + "</tbody></table>"
       + "<p style='font-size:11px;margin-top:10px'>Categories: " + esc(categories.join(", ")) + " · Printed " + esc(nowStamp()) + "</p>";
   } else if (which === "history"){
     title = "ENTRY & SYNC HISTORY — PRINTOUT";
@@ -1853,17 +2028,17 @@ var CODE_GS = [
 "function doGet(e) {",
 "  if (!authorized_(e && e.parameter ? e.parameter.token : null)) return jsonError_('Unauthorized');",
 "  const ss = SpreadsheetApp.getActiveSpreadsheet();",
-"  const packSheet = getOrCreateSheet_(ss, SHEET_PACKING, ['Date','Box No','Category','Stone Code','Colour','Type of Stone','Size (mm)','No of Stone','Box Weight (Kg)','Box Size (in)','Packing Done By','Container No','Lot No','Shipment Date','Shipment Mode','BL / AWB No','Location','Lock Status','Box Code']);",
-"  const masterSheet = getOrCreateSheet_(ss, SHEET_MASTER, ['Category','Stone Code','Colour','Type of Stone','Size (mm)']);",
+"  const packSheet = getOrCreateSheet_(ss, SHEET_PACKING, ['Date','Box No','Category / Part','Master Code','Type of Stone','Dimensions (inches)','No of Stone','Box Weight (Kg)','Box Size (in)','Packing Done By','Container No','Lot No','Shipment Date','Shipment Mode','BL / AWB No','Location','Lock Status','Box Code','Stone No','Stone Weight (kg each)','CFT (each)','Box Tare Weight (Kg)','Transport Vehicle No','Remarks','Box Total CFT']);",
+"  const masterSheet = getOrCreateSheet_(ss, SHEET_MASTER, ['Category / Part','Master Code','Type of Stone','Dimensions (inches)']);",
 "  const packRows = packSheet.getDataRange().getValues();",
 "  const boxMap = {};",
 "  for (let i = 1; i < packRows.length; i++) {",
 "    const r = packRows[i]; const boxNo = String(r[1] || '').trim(); if (!boxNo) continue;",
-"    if (!boxMap[boxNo]) boxMap[boxNo] = { date: fmt_(r[0]), boxNo: boxNo, boxCode: String(r[18] || ('SWA/JOB/' + boxNo)), boxWeight: Number(r[8]) || 0, boxSize: String(r[9] || ''), packingBy: String(r[10] || ''), containerNo: String(r[11] || ''), lotNo: String(r[12] || ''), shipmentDate: fmt_(r[13]), shipmentMode: String(r[14] || ''), blAwbNo: String(r[15] || ''), location: String(r[16] || 'JOHANNESBURG'), locked: String(r[17] || '').toUpperCase() === 'LOCKED', items: [] };",
-"    boxMap[boxNo].items.push({ category: String(r[2] || ''), code: String(r[3] || ''), colour: String(r[4] || ''), typeOfStone: String(r[5] || ''), sizeMm: String(r[6] || ''), noOfStone: Number(r[7]) || 0 });",
+"    if (!boxMap[boxNo]) boxMap[boxNo] = { date: fmt_(r[0]), boxNo: boxNo, boxCode: String(r[17] || ('SWA/JOB/' + boxNo)), boxWeight: Number(r[7]) || 0, boxSize: String(r[8] || ''), packingBy: String(r[9] || ''), containerNo: String(r[10] || ''), lotNo: String(r[11] || ''), shipmentDate: fmt_(r[12]), shipmentMode: String(r[13] || ''), blAwbNo: String(r[14] || ''), location: String(r[15] || 'JOHANNESBURG'), locked: String(r[16] || '').toUpperCase() === 'LOCKED', boxTareWeight: Number(r[21]) || '', transportVehicleNo: String(r[22] || ''), remarks: String(r[23] || ''), boxCft: Number(r[24]) || '', items: [] };",
+"    boxMap[boxNo].items.push({ category: String(r[2] || ''), masterCode: String(r[3] || ''), stoneNo: String(r[18] || ''), typeOfStone: String(r[4] || ''), sizeIn: String(r[5] || ''), noOfStone: Number(r[6]) || 0, weightKg: Number(r[19]) || '', cft: Number(r[20]) || stoneCft_(r[5]) });",
 "  }",
 "  const mcRows = masterSheet.getDataRange().getValues(); const masterCodes = [];",
-"  for (let j = 1; j < mcRows.length; j++) { if (!mcRows[j][1]) continue; masterCodes.push({ category: String(mcRows[j][0] || ''), code: String(mcRows[j][1] || ''), colour: String(mcRows[j][2] || ''), typeOfStone: String(mcRows[j][3] || ''), sizeMm: String(mcRows[j][4] || '') }); }",
+"  for (let j = 1; j < mcRows.length; j++) { if (!mcRows[j][1]) continue; masterCodes.push({ category: String(mcRows[j][0] || ''), code: String(mcRows[j][1] || ''), typeOfStone: String(mcRows[j][2] || ''), sizeIn: String(mcRows[j][3] || '') }); }",
 "  return ContentService.createTextOutput(JSON.stringify({ status: 'ok', boxes: Object.values(boxMap), masterCodes: masterCodes })).setMimeType(ContentService.MimeType.JSON);",
 "}",
 "",
@@ -1876,7 +2051,7 @@ var CODE_GS = [
 "  try {",
 "    lock.waitLock(10000);",
 "    const ss = SpreadsheetApp.getActiveSpreadsheet();",
-"    const packSheet = getOrCreateSheet_(ss, SHEET_PACKING, ['Date','Box No','Category','Stone Code','Colour','Type of Stone','Size (mm)','No of Stone','Box Weight (Kg)','Box Size (in)','Packing Done By','Container No','Lot No','Shipment Date','Shipment Mode','BL / AWB No','Location','Lock Status','Box Code']);",
+"    const packSheet = getOrCreateSheet_(ss, SHEET_PACKING, ['Date','Box No','Category / Part','Master Code','Type of Stone','Dimensions (inches)','No of Stone','Box Weight (Kg)','Box Size (in)','Packing Done By','Container No','Lot No','Shipment Date','Shipment Mode','BL / AWB No','Location','Lock Status','Box Code','Stone No','Stone Weight (kg each)','CFT (each)','Box Tare Weight (Kg)','Transport Vehicle No','Remarks','Box Total CFT']);",
 "    if (payload.action === 'upsertBox' && payload.box) {",
 "      const box = sanitizeBox_(payload.box);",
 "      if (!box.boxNo) return jsonError_('Invalid box');",
@@ -1885,7 +2060,7 @@ var CODE_GS = [
 "      deleteBoxRows_(packSheet, clean_(payload.boxNo, 30));",
 "    } else if (payload.action === 'replaceAllBoxes' && Array.isArray(payload.boxes)) {",
 "      if (payload.boxes.length > 5000) return jsonError_('Too many boxes');",
-"      if (packSheet.getLastRow() > 1) packSheet.getRange(2, 1, packSheet.getLastRow() - 1, 19).clearContent();",
+"      if (packSheet.getLastRow() > 1) packSheet.getRange(2, 1, packSheet.getLastRow() - 1, packSheet.getLastColumn()).clearContent();",
 "      payload.boxes.map(sanitizeBox_).filter(b => b.boxNo).forEach(b => appendBoxRows_(packSheet, b));",
 "    } else {",
 "      return jsonError_('Unknown action');",
@@ -1898,9 +2073,14 @@ var CODE_GS = [
 "  }",
 "}",
 "",
-"function appendBoxRows_(sheet, box) { const items = (box.items && box.items.length) ? box.items : [{}]; items.forEach(it => { sheet.appendRow([box.date || '', box.boxNo || '', it.category || '', it.code || '', it.colour || '', it.typeOfStone || '', it.sizeMm || '', Number(it.noOfStone) || 0, Number(box.boxWeight) || 0, box.boxSize || '', box.packingBy || '', box.containerNo || '', box.lotNo || '', box.shipmentDate || '', box.shipmentMode || '', box.blAwbNo || '', box.location || '', box.locked ? 'LOCKED' : 'OPEN', box.boxCode || ('SWA/JOB/' + (box.boxNo || ''))]); }); }",
+"function appendBoxRows_(sheet, box) { const items = (box.items && box.items.length) ? box.items : [{}]; items.forEach(it => { const masterCode = it.masterCode || it.code || ''; sheet.appendRow([box.date || '', box.boxNo || '', it.category || '', masterCode, it.typeOfStone || '', it.sizeIn || '', Number(it.noOfStone) || 0, Number(box.boxWeight) || 0, box.boxSize || '', box.packingBy || '', box.containerNo || '', box.lotNo || '', box.shipmentDate || '', box.shipmentMode || '', box.blAwbNo || '', box.location || '', box.locked ? 'LOCKED' : 'OPEN', box.boxCode || ('SWA/JOB/' + (box.boxNo || '')), it.stoneNo || '', it.weightKg === '' || it.weightKg == null ? '' : Number(it.weightKg) || 0, stoneCft_(it.sizeIn), Number(box.boxTareWeight) || 0, box.transportVehicleNo || '', box.remarks || '', Number(box.boxCft) || boxCft_(box.items)]); }); }",
+"function boxCft_(items) { return (Array.isArray(items) ? items : []).reduce((total, it) => total + (Number(stoneCft_(it.sizeIn)) || 0) * (Number(it.noOfStone) || 0), 0); }",
 "function deleteBoxRows_(sheet, boxNo) { const data = sheet.getDataRange().getValues(); for (let i = data.length - 1; i >= 1; i--) { if (String(data[i][1]).trim() === String(boxNo).trim()) sheet.deleteRow(i + 1); } }",
-"function getOrCreateSheet_(ss, name, headers) { let sh = ss.getSheetByName(name); if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); } return sh; }",
+"function getOrCreateSheet_(ss, name, headers) { let sh = ss.getSheetByName(name); if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); return sh; } if (!sh.getLastRow()) { sh.appendRow(headers); return sh; } migrateSheet_(sh, name, headers); return sh; }",
+"function stoneCft_(sizeIn) { const m = String(sizeIn == null ? '' : sizeIn).trim().match(/^(\\d+(?:\\.\\d*)?|\\.\\d+)\\s*[x×*]\\s*(\\d+(?:\\.\\d*)?|\\.\\d+)\\s*[x×*]\\s*(\\d+(?:\\.\\d*)?|\\.\\d+)$/i); if (!m) return ''; const d = m.slice(1).map(Number); if (d.some(n => !Number.isFinite(n) || n <= 0)) return ''; return d[0] * d[1] * d[2] / 1728; }",
+"function migrateSheet_(sheet, name, headers) { let last = sheet.getLastColumn(); let row = sheet.getRange(1, 1, 1, last).getValues()[0]; const colourIndex = row.findIndex(v => /^(COLOUR|COLOR)$/i.test(String(v || '').trim())); if (colourIndex >= 0) { sheet.deleteColumn(colourIndex + 1); row.splice(colourIndex, 1); } const sizeIndex = row.findIndex(v => /SIZE|DIMENSION/i.test(String(v || ''))); if (sizeIndex >= 0 && /MM/i.test(String(row[sizeIndex]))) { const col = sizeIndex + 1; const count = sheet.getLastRow() - 1; if (count > 0) { const values = sheet.getRange(2, col, count, 1).getValues().map(r => [mmToInches_(r[0])]); sheet.getRange(2, col, count, 1).setValues(values); } } const lastCol = sheet.getLastColumn(); if (lastCol < headers.length) sheet.getRange(1, lastCol + 1, 1, headers.length - lastCol).setValues([headers.slice(lastCol)]); sheet.getRange(1, 1, 1, headers.length).setValues([headers]); const sizeCol = headers.findIndex(h => /DIMENSION/i.test(h)) + 1; const cftCol = headers.findIndex(h => /^CFT/i.test(h)) + 1; if (sizeCol && cftCol) fillMissingCft_(sheet, sizeCol, cftCol); }",
+"function fillMissingCft_(sheet, sizeCol, cftCol) { const count = sheet.getLastRow() - 1; if (count <= 0) return; const sizes = sheet.getRange(2, sizeCol, count, 1).getValues(); const cfts = sheet.getRange(2, cftCol, count, 1).getValues(); let changed = false; const values = cfts.map((r, i) => { if (r[0] !== '' && r[0] != null) return [r[0]]; const cft = stoneCft_(sizes[i][0]); if (cft !== '') changed = true; return [cft]; }); if (changed) sheet.getRange(2, cftCol, count, 1).setValues(values); }",
+"function mmToInches_(value) { return String(value == null ? '' : value).replace(/mm/ig, '').replace(/\\d+(?:\\.\\d+)?/g, n => (Number(n) / 25.4).toFixed(2).replace(/\\.?0+$/, '')).trim(); }",
 "function fmt_(val) { if (!val) return ''; if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd'); return String(val); }",
 "function authorized_(token) {",
 "  const configured = PropertiesService.getScriptProperties().getProperty('PORTAL_SYNC_TOKEN');",
@@ -1917,17 +2097,20 @@ var CODE_GS = [
 "  const boxNo = clean_(b.boxNo, 30);",
 "  if (!boxNo || !/^[-A-Za-z0-9._/]+$/.test(boxNo)) return {};",
 "  const items = Array.isArray(b.items) ? b.items.slice(0, 200).map(it => ({",
-"    category: clean_(it.category, 50), code: clean_(it.code, 80).toUpperCase(),",
-"    colour: clean_(it.colour, 80), typeOfStone: clean_(it.typeOfStone, 80),",
-"    sizeMm: clean_(it.sizeMm, 50), noOfStone: Math.max(0, Math.min(Number(it.noOfStone) || 0, 1000000))",
+"    category: clean_(it.category, 50), masterCode: clean_(it.masterCode || it.code, 80).toUpperCase(),",
+"    stoneNo: clean_(it.stoneNo, 20).toUpperCase(),",
+"    typeOfStone: clean_(it.typeOfStone, 80),",
+"    sizeIn: clean_(it.sizeIn, 50), weightKg: it.weightKg === '' || it.weightKg == null ? '' : Math.max(0, Math.min(Number(it.weightKg) || 0, 1000000)), noOfStone: Math.max(0, Math.min(Number(it.noOfStone) || 0, 1000000))",
 "  })) : [];",
 "  return {",
 "    date: clean_(b.date, 20), boxNo: boxNo, boxCode: clean_(b.boxCode || ('SWA/JOB/' + boxNo), 80).toUpperCase(),",
 "    boxWeight: Math.max(0, Math.min(Number(b.boxWeight) || 0, 10000000)),",
+"    boxTareWeight: Math.max(0, Math.min(Number(b.boxTareWeight) || 0, 10000000)), boxCft: Math.max(0, Math.min(Number(b.boxCft) || 0, 10000000)),",
 "    boxSize: clean_(b.boxSize, 50), packingBy: clean_(b.packingBy, 80),",
 "    containerNo: clean_(b.containerNo, 80).toUpperCase(), lotNo: clean_(b.lotNo, 80),",
 "    shipmentDate: clean_(b.shipmentDate, 20), shipmentMode: clean_(b.shipmentMode, 30).toUpperCase(),",
 "    blAwbNo: clean_(b.blAwbNo, 80), location: clean_(b.location || 'JOHANNESBURG', 80),",
+"    transportVehicleNo: clean_(b.transportVehicleNo, 80), remarks: clean_(b.remarks, 500),",
 "    locked: b.locked === true, items: items",
 "  };",
 "}"
